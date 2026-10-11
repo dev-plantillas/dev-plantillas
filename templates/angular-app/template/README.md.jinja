@@ -6,9 +6,14 @@ App frontend Angular (`{{ app_name }}`). Generada desde la plantilla
 ## Arrancar
 
 ```bash
+export NODE_AUTH_TOKEN=$(gh auth token)   # design system vrb desde GitHub Packages (read:packages)
 npm install
 npm start            # http://localhost:4200 contra el backend de QA
 ```
+
+Usa el design system **vrb** (`@vrojas1015/vrb`, paquete privado de GitHub Packages):
+`.npmrc` lee el token de `NODE_AUTH_TOKEN` y el CI usa {{ 'la variable CI/CD' if ci_provider == 'gitlab' else 'el secret' }}
+`NPM_TOKEN` (ver `docs/ci-cd-setup.md`).
 
 ## Scripts
 

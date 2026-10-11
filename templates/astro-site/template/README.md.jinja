@@ -8,6 +8,7 @@ SEO técnico verificado en el CI y Lighthouse CI. Producción: {{ site_url }}.
 Requisitos: Node 24+, npm 11.
 
 ```bash
+export NODE_AUTH_TOKEN=$(gh auth token)   # design system vrb desde GitHub Packages (read:packages)
 npm install
 cp .env.example .env      # PUBLIC_ENTORNO=dev{% if ent %}, PUBLIC_API_FUENTE=mock{% endif %}
 npm run dev               # http://localhost:4321
@@ -20,6 +21,10 @@ npm run dev               # http://localhost:4321
 | `npm run preview` | sirve el build |
 | `npm run test:seo` / `test:jsonld` / `test:redirecciones` | controles sobre `dist/` |
 | `npm run lighthouse` | Lighthouse CI con presupuestos (necesita Chrome) |
+
+Usa el design system **vrb** (`@vrojas1015/vrb`, paquete privado de GitHub Packages):
+`.npmrc` lee el token de `NODE_AUTH_TOKEN` y el CI usa {{ 'la variable CI/CD' if ci_gl else 'el secret' }} `NPM_TOKEN`
+(ver `docs/deploy.md`, «Paquetes privados»).
 
 ## Documentación
 

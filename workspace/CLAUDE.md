@@ -41,6 +41,11 @@ la plataforma. Las reglas de cada stack están en `backend\CLAUDE.md` y
 - [ ] Migraciones revisadas: up y down, sin `DEFAULT` que cambie el significado de datos existentes
 - [ ] El issue dice qué se hizo y **cómo se probó** (archivo, test, comando)
 - [ ] MR abierto con el template completo
+- [ ] El avance del issue (`plan.md` o `issue.md`) está al día en `docs`, con su MR/PR
+      abierto **al mismo tiempo** que el de código
+- [ ] Si el cambio sirve a cualquier proyecto (design system, CI, estructura,
+      configuración), tiene su PR en `dev-plantillas` para que la plantilla no se
+      quede atrás; si no, el issue dice por qué es solo de este proyecto
 
 ## Convenciones
 

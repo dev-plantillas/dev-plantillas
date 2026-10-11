@@ -1,0 +1,69 @@
+// El marco sale de vrb (.vrb-shell, .vrb-sidebar, .vrb-breadcrumb); aquí solo
+// lo que vrb no trae: el salto al contenido, la marca y la cuenta del pie.
+.shell__skip {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-2);
+  z-index: calc(var(--vrb-z-toast) + 1);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--vrb-radius-button);
+  background: var(--vrb-ink);
+  color: var(--vrb-ink-fg);
+  transform: translateY(-200%);
+
+  &:focus {
+    transform: none;
+  }
+}
+
+.shell__brand {
+  overflow: hidden;
+  color: var(--vrb-fg);
+  font-weight: 600;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+{%- if use_firebase_auth %}
+
+.shell__user {
+  display: grid;
+  flex: 1 1 auto;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.shell__user-name,
+.shell__user-email {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shell__user-name {
+  font-weight: 500;
+  font-size: var(--text-small);
+}
+
+.shell__user-email {
+  color: var(--vrb-muted-fg);
+  font-size: 12px;
+}
+
+.shell__avatar {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--vrb-radius-badge);
+  background: var(--vrb-muted);
+  color: var(--vrb-fg);
+  font: 600 10px/1 var(--vrb-font-mono);
+  text-transform: uppercase;
+}
+{%- endif %}
+
+.shell__content:focus {
+  outline: none;
+}

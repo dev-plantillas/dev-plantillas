@@ -12,6 +12,7 @@ concurrency:
 
 permissions:
   contents: read
+  packages: read # design system @vrojas1015/vrb en GitHub Packages
 
 jobs:
   verify:
@@ -23,6 +24,11 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+        env:
+          # Design system vrb desde GitHub Packages (.npmrc). NPM_TOKEN: token clásico
+          # con read:packages; sin él se intenta con el GITHUB_TOKEN del workflow (sólo
+          # alcanza si el paquete le dio acceso a este repo).
+          NODE_AUTH_TOKEN: {% raw %}${{ secrets.NPM_TOKEN || secrets.GITHUB_TOKEN }}{% endraw %}
       - run: npm run lint
       - run: npm run test:unit
       - run: npm run build:prod

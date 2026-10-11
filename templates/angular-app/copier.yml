@@ -13,6 +13,8 @@ _message_after_copy: |
     cd {{ _copier_conf.dst_path }}
     git init -b main   (si todavía no es un repo)
     npm install        (genera package-lock.json: commitealo, el CI usa `npm ci`)
+                       vrb viene de GitHub Packages: antes exporta NODE_AUTH_TOKEN
+                       con read:packages (p. ej. NODE_AUTH_TOKEN=$(gh auth token))
     npm start
 
   Checklist completo: README.md de la plantilla, sección "Después de generar".
@@ -38,7 +40,7 @@ app_title:
 # ------------------------------------------------------------------
 api_base_url_qa:
   type: str
-  help: URL base del API (gateway) de QA. Si todavía no la sabés, dejá el placeholder.
+  help: URL base del API (gateway) de QA. Si todavía no la sabes, deja el placeholder.
   default: https://api-qa.example.com
 
 api_base_url_prod:
@@ -105,7 +107,7 @@ default_lang:
   default: es
   validator: >-
     {% if not (default_lang | regex_search('^[a-z]{2}$')) %}
-    Usá un código de dos letras (es, en, pt...).
+    Usa un código de dos letras (es, en, pt...).
     {% endif %}
 
 # ------------------------------------------------------------------

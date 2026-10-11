@@ -1,32 +1,80 @@
-import { ChangeDetectionStrategy, Component{% if use_firebase_auth %}, inject{% endif %} } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+{%- if use_firebase_auth -%}
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+{%- else -%}
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+{%- endif %}
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 {%- if i18n %}
 import { TranslatePipe } from '@ngx-translate/core';
 {%- endif %}
-{%- if use_firebase_auth %}
+import { filter } from 'rxjs';
 
+{% if use_firebase_auth -%}
 import { AuthService } from '@/app/core/auth/auth.service';
 import { SessionStore } from '@/app/core/auth/session.store';
-import { Button } from '@/app/ui/components/button/button';
+{% endif -%}
+import { Icon } from '@/app/ui/components/icon/icon';
+{%- if use_firebase_auth %}
+import { initialsOf } from './initials';
 {%- endif %}
+import { ShellNav } from './shell-nav';
 
 /**
- * Layout principal: header + navegación + <router-outlet>. Las páginas de las
- * features se renderizan adentro. Lo que es "marco" de la app vive en layout/,
- * no en las features.
+ * Layout principal (`vrb-shell` del design system vrb): sidebar, header con
+ * migas de pan y el <router-outlet>. Las páginas de las features se renderizan
+ * adentro y le cuentan sus migas al shell con `ShellNav`. Bajo 900px el sidebar
+ * es un cajón: se abre con el botón de menú y se cierra al navegar, con Escape o
+ * tocando fuera.
  */
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive{% if use_firebase_auth %}, Button{% endif %}{% if i18n %}, TranslatePipe{% endif %}],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon{% if i18n %}, TranslatePipe{% endif %}],
   templateUrl: './shell.html',
   styleUrl: './shell.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '(document:keydown.escape)': 'closeMenu()' },
 })
 export class Shell {
   protected readonly title = '{{ app_title }}';
+  protected readonly nav = inject(ShellNav);
 {%- if use_firebase_auth %}
   protected readonly session = inject(SessionStore);
   private readonly auth = inject(AuthService);
+{%- endif %}
+
+  protected readonly menuOpen = signal(false);
+{%- if use_firebase_auth %}
+  /** Iniciales para el avatar del pie: del nombre, o del correo. */
+  protected readonly initials = computed(() => initialsOf(this.session.user()));
+{%- endif %}
+
+  constructor() {
+    inject(Router)
+      .events.pipe(
+        filter((e) => e instanceof NavigationEnd),
+        takeUntilDestroyed(),
+      )
+      .subscribe(() => this.closeMenu());
+    // Al salir del shell (p. ej. logout) no quedan migas de la sesión anterior.
+    inject(DestroyRef).onDestroy(() => this.nav.clear());
+  }
+
+  protected toggleMenu(): void {
+    this.menuOpen.update((open) => !open);
+  }
+
+  protected closeMenu(): void {
+    this.menuOpen.set(false);
+  }
+{%- if use_firebase_auth %}
 
   protected logout(): void {
     void this.auth.logout();

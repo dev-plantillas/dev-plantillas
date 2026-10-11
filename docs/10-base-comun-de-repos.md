@@ -184,10 +184,21 @@ Issue: <docs_repo>/…/issues/<n>-…  <!-- obligatorio salvo chore/deps -->
 - [ ] Migraciones: tienen `down` / no aplica
 - [ ] Docs del repo actualizadas / no aplica
 - [ ] Ficha o ADR en `docs` actualizados / no aplica
+- [ ] Avance del issue registrado en el repo de docs (PR: …) / no aplica
+- [ ] Si el cambio sirve a otros proyectos, PR en dev-plantillas (link) / no aplica
 ```
 
 Cada plantilla agrega su sección propia (p. ej. `api-gateway`: rutas nuevas en
 `routes.yaml`; `astro-site`: Lighthouse).
+
+**Lo que un proyecto hace y sirve a todos, vuelve a la plantilla.** Si un proyecto
+resuelve algo que cualquier otro necesitaría (design system, CI, estructura,
+configuración, una convención), abre también un PR en `dev-plantillas`; si no, el
+issue dice por qué es sólo de ese proyecto. Así los proyectos no se desactualizan
+entre sí y los demás lo reciben con `copier update`. Las dos últimas casillas del
+checklist (avance del issue en `docs` con su PR abierto al mismo tiempo que el de
+código, y el PR en `dev-plantillas`) lo hacen visible en cada revisión; la sección
+«Terminado significa» de `workspace/CLAUDE.md` pide lo mismo a los agentes.
 
 ## 9. Fases
 

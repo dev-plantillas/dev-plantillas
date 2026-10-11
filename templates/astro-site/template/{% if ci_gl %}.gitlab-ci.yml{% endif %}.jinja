@@ -16,6 +16,8 @@
 #
 # Variables CI/CD (Settings › CI/CD › Variables; NUNCA en este archivo):
 #   SITEMAP_PROD           (opcional) https://<dominio>/sitemap-index.xml: activa el chequeo de redirecciones
+#   NPM_TOKEN              token clásico de GitHub con read:packages (Masked, sin scope de
+#                          environment): instala el design system @vrojas1015/vrb (.npmrc)
 {%- if d_fb or d_cr %}
 #   GCP_WIF_PROVIDER       projects/<NÚMERO>/locations/global/workloadIdentityPools/<POOL>/providers/<PROVIDER>
 #   GCP_SA_EMAIL           <service-account>@<proyecto>.iam.gserviceaccount.com
@@ -55,6 +57,10 @@ stages:
 {%- if has_cd %}
   - deploy
 {%- endif %}
+
+variables:
+  # .npmrc lee el token de GitHub Packages de NODE_AUTH_TOKEN.
+  NODE_AUTH_TOKEN: $NPM_TOKEN
 
 default:
   image: node:24
@@ -265,6 +271,7 @@ deploy:qa:
     - docker:27-dind
   variables:
     DOCKER_TLS_CERTDIR: '/certs'
+    DOCKER_BUILDKIT: '1' # --secret (token de npm) necesita BuildKit
   before_script: []
   cache: []
   script:
@@ -272,6 +279,7 @@ deploy:qa:
     - docker pull "$CI_REGISTRY_IMAGE:$PUBLIC_ENTORNO" || true
     - >-
       docker build
+      --secret id=npm_token,env=NPM_TOKEN
       --cache-from "$CI_REGISTRY_IMAGE:$PUBLIC_ENTORNO"
       --build-arg BUILDKIT_INLINE_CACHE=1
       --build-arg PUBLIC_ENTORNO="$PUBLIC_ENTORNO"

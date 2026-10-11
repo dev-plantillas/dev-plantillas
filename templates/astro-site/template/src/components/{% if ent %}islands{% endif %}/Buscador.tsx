@@ -165,9 +165,12 @@ export default function Buscador({ idioma, inicial, categorias }: Props) {
         method="get"
         onSubmit={alEnviar}
       >
-        <div className="buscador__campo">
-          <label htmlFor="buscador-q">{t(idioma, 'catalogo.buscar')}</label>
+        <div className="vrb-field buscador__campo">
+          <label className="vrb-field__label" htmlFor="buscador-q">
+            {t(idioma, 'catalogo.buscar')}
+          </label>
           <input
+            className="vrb-input"
             id="buscador-q"
             name="q"
             type="search"
@@ -176,9 +179,12 @@ export default function Buscador({ idioma, inicial, categorias }: Props) {
             onChange={(e) => setTexto(e.target.value)}
           />
         </div>
-        <div className="buscador__campo">
-          <label htmlFor="buscador-cat">{t(idioma, 'catalogo.categoria')}</label>
+        <div className="vrb-field buscador__campo">
+          <label className="vrb-field__label" htmlFor="buscador-cat">
+            {t(idioma, 'catalogo.categoria')}
+          </label>
           <select
+            className="vrb-select"
             id="buscador-cat"
             name="cat"
             value={params.cat}
@@ -192,7 +198,7 @@ export default function Buscador({ idioma, inicial, categorias }: Props) {
             ))}
           </select>
         </div>
-        <button type="submit" className="boton">
+        <button type="submit" className="vrb-button vrb-button--primary">
           {t(idioma, 'catalogo.enviar')}
         </button>
       </form>
@@ -209,7 +215,7 @@ export default function Buscador({ idioma, inicial, categorias }: Props) {
       ) : (
         <ul className="tarjetas" aria-busy={estado === 'cargando'}>
           {items.map((p) => (
-            <li key={p.slug} className="tarjeta">
+            <li key={p.slug} className="vrb-card tarjeta">
               <h2>
                 <a href={ruta(idioma, `/catalogo/${p.slug}/`)}>{p.nombre}</a>
               </h2>
@@ -226,7 +232,7 @@ export default function Buscador({ idioma, inicial, categorias }: Props) {
         <p>
           <button
             type="button"
-            className="boton boton--secundario"
+            className="vrb-button vrb-button--outline"
             disabled={estado === 'cargando'}
             onClick={() => void cargar(params.q, params.cat, cursor)}
           >

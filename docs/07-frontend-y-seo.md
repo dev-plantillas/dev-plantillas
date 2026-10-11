@@ -20,6 +20,42 @@ Una misma plataforma suele tener las dos: el sitio público en Astro (con un
 buscador o un perfil público como isla de React) y el panel en Angular, ambos
 contra el mismo `api-gateway`.
 
+### Design system: vrb
+
+**Toda interfaz usa el design system vrb; lo que falte se agrega a vrb, no CSS
+suelto en el proyecto.** `angular-app` y `astro-site` se generan siempre con
+`@vrojas1015/vrb` (no es una pregunta): clases `vrb-*` (botones, campos, tarjetas,
+insignias, avisos, diálogos, sidebar, migas de pan…), variables `--vrb-*` y las
+fuentes IBM Plex del paquete. El CSS del proyecto sólo acomoda (grilla, separación,
+ancho) y lee variables; si una pantalla necesita algo que vrb no trae, se agrega al
+repo de vrb (PR + versión nueva) y el proyecto sube la dependencia.
+
+| | `angular-app` | `astro-site` |
+|---|---|---|
+| CSS | `dist/vrb.css` en `angular.json` | `@vrojas1015/vrb/min.css` en `Base.astro` |
+| Fuentes | `src/styles/_fonts.scss` (los `.woff2` se copian del paquete a `/fonts`) | `fonts` de `astro.config.mjs` (Astro las sirve con métricas de fallback) |
+| Tokens propios | `_tokens.scss` = alias a `--vrb-*` | `global.css` = alias a `--vrb-*` |
+| Marco | `vrb-shell`: sidebar, migas (`ShellNav`), `ui-button` con `vrb-button`, `ui-icon` | cabecera y pie propios; botones, tarjetas, migas y campos `vrb-*` |
+
+Versión: la última publicada al actualizar la plantilla (hoy 0.2.0, fijada en
+`package.json`). Lo propio de cada producto (logo, avatar, colores de dominio) no va
+en la plantilla.
+
+**Paquete privado.** `@vrojas1015/vrb` está en GitHub Packages. Cada proyecto lleva un
+`.npmrc` **versionado y sin token** (`@vrojas1015:registry=https://npm.pkg.github.com`
+y `_authToken=${NODE_AUTH_TOKEN}`):
+
+| Dónde | Token |
+|---|---|
+| Local | `NODE_AUTH_TOKEN=$(gh auth token) npm ci` (el token de `gh` necesita `read:packages`) |
+| GitHub Actions | secret `NPM_TOKEN` (token clásico con `read:packages`); de respaldo el `GITHUB_TOKEN` con `packages: read`, que sólo alcanza si el paquete le dio acceso al repo (un repo de otra cuenta u organización no puede) |
+| GitLab CI | variable CI/CD `NPM_TOKEN` (Masked) → `NODE_AUTH_TOKEN` |
+| `docker build` | secret de BuildKit `--secret id=npm_token,env=NODE_AUTH_TOKEN` (no queda en la imagen) |
+| Cloud Build (`astro-site` con Cloud Run) | secreto `npm-token` de Secret Manager |
+
+El CI de `dev-plantillas` instala vrb con el secret `NPM_TOKEN` del repo; sin él, los
+jobs de `angular-app` y `astro-site` generan la plantilla y avisan en vez de compilar.
+
 ## 2. `astro-site`: arquitectura
 
 ```
@@ -99,7 +135,8 @@ si una página no lo usa o si le falta algo.
 | CLS | < 0,1 | `width`/`height` en toda imagen, fuentes locales con `font-display: swap` y métricas de fallback |
 | INP | < 200 ms | Pocas islas, hidratadas tarde; nada de librerías pesadas en la primera carga |
 
-- Fuentes servidas desde el propio sitio, no desde Google Fonts.
+- Fuentes servidas desde el propio sitio, no desde Google Fonts: las IBM Plex de vrb
+  (`fonts` de `astro.config.mjs`), con `preload` sólo de los pesos de la primera vista.
 - Presupuesto de JS por página (p. ej. ≤ 50 KB comprimidos fuera de las islas).
 
 ### Accesibilidad
@@ -223,6 +260,9 @@ Versiones: Astro y React en la última mayor estable al construir la plantilla
 - [ ] Con `analytics: ga4`, no se carga ninguna cookie antes de aceptar.
 - [ ] Imagen Docker (coolify) sirve el sitio; con `hibrido`, una ruta SSR responde.
 - [ ] `copier update` entre dos versiones sin conflictos.
+- [ ] La interfaz usa clases `vrb-*` y variables `--vrb-*`; `npm ci` instala
+      `@vrojas1015/vrb` con `NODE_AUTH_TOKEN` (local, CI y `docker build`) sin ningún
+      token escrito en el repo.
 
 ## Referencias
 

@@ -42,7 +42,7 @@ Cloud Run.
 ```bash
 PROJECT=<id-del-proyecto>; REPO=<grupo/repo o owner/repo>
 gcloud services enable iam.googleapis.com iamcredentials.googleapis.com sts.googleapis.com \
-  {% if d_fb %}firebasehosting.googleapis.com {% endif %}{% if d_cr %}run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com {% endif %}--project "$PROJECT"
+  {% if d_fb %}firebasehosting.googleapis.com {% endif %}{% if d_cr %}run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com secretmanager.googleapis.com {% endif %}--project "$PROJECT"
 {%- if d_cr %}
 
 # Artifact Registry para las imágenes
@@ -61,6 +61,17 @@ for ROL in roles/run.admin roles/cloudbuild.builds.editor roles/artifactregistry
            roles/iam.serviceAccountUser roles/storage.admin roles/serviceusage.serviceUsageConsumer; do
   gcloud projects add-iam-policy-binding "$PROJECT" --member "serviceAccount:$SA" --role "$ROL"
 done
+{%- endif %}
+{%- if d_cr %}
+
+# Token de GitHub Packages para Cloud Build (design system vrb, ver «Paquetes privados»)
+printf '%s' '<token-clásico-con-read:packages>' | gcloud secrets create npm-token --data-file=- --project "$PROJECT"
+NUM=$(gcloud projects describe "$PROJECT" --format='value(projectNumber)')
+# Cuenta con la que corre Cloud Build: la de Compute por defecto (proyectos nuevos)
+# o $NUM@cloudbuild.gserviceaccount.com (proyectos anteriores a 2024).
+gcloud secrets add-iam-policy-binding npm-token --project "$PROJECT" \
+  --role roles/secretmanager.secretAccessor \
+  --member "serviceAccount:$NUM-compute@developer.gserviceaccount.com"
 {%- endif %}
 
 # Workload Identity Federation: el CI de ESTE repo puede impersonar al SA, sin claves
@@ -164,3 +175,30 @@ El CI sólo verifica. Para elegir uno: `python -m copier update --data deploy_ta
 
 Después del primer deploy a producción: `docs/search-console.md` y definir la
 variable `SITEMAP_PROD` del CI para activar el chequeo de redirecciones.
+
+## Paquetes privados (design system vrb)
+
+`npm ci` instala `@vrojas1015/vrb` desde GitHub Packages. `.npmrc` (versionado, sin
+token) apunta el scope `@vrojas1015` a `npm.pkg.github.com` y lee el token de
+`NODE_AUTH_TOKEN`:
+
+1. Crear un token **clásico** de GitHub con scope `read:packages` (idealmente de una
+   cuenta de servicio con acceso al paquete, no personal).
+{%- if ci_gl %}
+2. GitLab: *Settings › CI/CD › Variables* → `NPM_TOKEN`, **Masked**, sin scope de
+   environment.
+{%- else %}
+2. GitHub: *Settings › Secrets and variables › Actions › Secrets* → `NPM_TOKEN`. Sin
+   él, los workflows intentan con el `GITHUB_TOKEN` (`packages: read`), que sólo alcanza
+   si el paquete le dio acceso a este repo (*Package settings › Manage Actions access*).
+{%- endif %}
+{%- if d_cr %}
+3. Cloud Build: el secreto `npm-token` de Secret Manager en cada proyecto (ver «Setup de
+   GCP»); `cloudbuild.yaml` lo pasa al `docker build` como secret de BuildKit.
+{%- endif %}
+{%- if docker %}
+- La imagen Docker recibe el token como secret de BuildKit
+  (`docker build --secret id=npm_token,env=NODE_AUTH_TOKEN …`): no queda en ninguna capa.
+{%- endif %}
+- En local: `NODE_AUTH_TOKEN=$(gh auth token) npm ci` (el token de `gh` necesita
+  `read:packages`: `gh auth refresh -s read:packages`).

@@ -1,5 +1,5 @@
 // @ts-check
-import { defineConfig, envField } from 'astro/config'
+import { defineConfig, envField, fontProviders } from 'astro/config'
 {%- if blog %}
 import mdx from '@astrojs/mdx'
 {%- endif %}
@@ -57,6 +57,39 @@ export default defineConfig({
     routing: { prefixDefaultLocale: false },
   },
 {%- endif %}
+
+  // Fuentes del design system vrb: IBM Plex Sans para la UI y Mono para los
+  // momentos de marca, tomadas del paquete (@vrojas1015/vrb/fonts/*). Astro las
+  // sirve desde el sitio con font-display: swap y métricas de fallback (sin CLS).
+  fonts: [
+    {
+      provider: fontProviders.local(),
+      name: 'IBM Plex Sans',
+      cssVariable: '--font-sans',
+      fallbacks: ['ui-sans-serif', 'system-ui', 'sans-serif'],
+      options: {
+        variants: [
+          { src: ['@vrojas1015/vrb/fonts/IBMPlexSans-400.woff2'], weight: 400, style: 'normal' },
+          { src: ['@vrojas1015/vrb/fonts/IBMPlexSans-500.woff2'], weight: 500, style: 'normal' },
+          { src: ['@vrojas1015/vrb/fonts/IBMPlexSans-600.woff2'], weight: 600, style: 'normal' },
+          { src: ['@vrojas1015/vrb/fonts/IBMPlexSans-700.woff2'], weight: 700, style: 'normal' },
+        ],
+      },
+    },
+    {
+      provider: fontProviders.local(),
+      name: 'IBM Plex Mono',
+      cssVariable: '--font-mono',
+      fallbacks: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+      options: {
+        variants: [
+          { src: ['@vrojas1015/vrb/fonts/IBMPlexMono-400.woff2'], weight: 400, style: 'normal' },
+          { src: ['@vrojas1015/vrb/fonts/IBMPlexMono-500.woff2'], weight: 500, style: 'normal' },
+          { src: ['@vrojas1015/vrb/fonts/IBMPlexMono-600.woff2'], weight: 600, style: 'normal' },
+        ],
+      },
+    },
+  ],
 
   integrations: [
     react(),

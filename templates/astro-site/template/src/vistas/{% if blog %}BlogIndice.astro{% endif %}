@@ -40,7 +40,7 @@ const items = [
     ) : (
       <ul class="tarjetas" role="list">
         {posts.map((post) => (
-          <li class="tarjeta">
+          <li class="vrb-card tarjeta">
             <h2>
               <a href={urlDe(post)}>{post.data.title}</a>
             </h2>

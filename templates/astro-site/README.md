@@ -4,14 +4,16 @@ Plantilla [Copier](https://copier.readthedocs.io/) para sitios que tienen que po
 en buscadores (landing, blog, catálogo, perfiles públicos): Astro 7 con SSG (o híbrido
 con rutas SSR en Node), islas de React 19, SEO técnico obligatorio y verificado en el CI,
 JSON-LD tipado, Lighthouse CI con presupuestos y deploy a Firebase Hosting, Coolify o
-Cloud Run. Especificación: `docs/07-frontend-y-seo.md`.
+Cloud Run. Toda la interfaz usa el design system vrb (`@vrojas1015/vrb`).
+Especificación: `docs/07-frontend-y-seo.md`.
 
 ## Qué genera
 
 ```
 <sitio>/
 ├── CLAUDE.md, .claude/settings.json   reglas cortas para agentes + permisos
-├── astro.config.mjs                    site, trailingSlash, i18n, sitemap (lastmod), redirects, astro:env
+├── astro.config.mjs                    site, trailingSlash, i18n, sitemap (lastmod), redirects, astro:env, fuentes IBM Plex de vrb
+├── .npmrc                              @vrojas1015 → GitHub Packages (token por NODE_AUTH_TOKEN, nunca en el archivo)
 ├── sitio.config.mjs                    nombre, URL, idiomas: única fuente para config, código y scripts
 ├── redirects.json                      redirecciones 301 (único lugar)
 ├── lighthouserc.json, lychee.toml      presupuestos de Lighthouse CI y enlaces
@@ -54,6 +56,21 @@ Cloud Run. Especificación: `docs/07-frontend-y-seo.md`.
 No se pregunta ningún secreto ni ID de medición: `PUBLIC_GA4_ID`, WIF, tokens de Coolify
 y `SITEMAP_PROD` son variables del CI (ver `docs/deploy.md` del proyecto generado).
 
+## Design system
+
+Toda la interfaz usa **vrb** (`@vrojas1015/vrb` 0.2.0, paquete privado de GitHub
+Packages); no es opcional. **Lo que falte se agrega a vrb, no CSS suelto en el
+proyecto.** `Base.astro` importa `@vrojas1015/vrb/min.css`; las fuentes IBM Plex salen
+del paquete (`fonts` en `astro.config.mjs`, servidas por Astro con métricas de
+fallback); `src/styles/global.css` sólo acomoda el layout con alias a `--vrb-*`; botones,
+tarjetas, migas, campos y el banner de cookies usan clases `vrb-*`. El tema es el claro
+de vrb: para el oscuro, `data-theme="dark"` en `<html>` del proyecto.
+
+Instalar necesita un token con `read:packages` en `NODE_AUTH_TOKEN`: en local
+`NODE_AUTH_TOKEN=$(gh auth token)`; en el CI `NPM_TOKEN` (GitHub: secret, con
+`GITHUB_TOKEN` + `packages: read` de respaldo; GitLab: variable CI/CD; Docker: secret
+de BuildKit; Cloud Build: secreto `npm-token` de Secret Manager).
+
 ## Generar
 
 ```powershell
@@ -75,7 +92,7 @@ astro 7.3.8 · @astrojs/react 7.0.1 · @astrojs/mdx 8.0.3 · @astrojs/sitemap 3.
 @types/react 19.3.0 · schema-dts 2.1.0 · @lhci/cli 0.15.1 · typescript **6.0.3** (la 7.0 no
 la soportan todavía `@astrojs/check` ni `typescript-eslint`) · eslint 10.12.0 ·
 typescript-eslint 8.71.1 · eslint-plugin-astro 3.2.1 · eslint-plugin-react-hooks 7.1.1 ·
-prettier 3.9.9 · prettier-plugin-astro 1.1.1 · compression 1.8.2 (híbrido) · lychee 0.24.2 (imagen).
+prettier 3.9.9 · prettier-plugin-astro 1.1.1 · @vrojas1015/vrb 0.2.0 · compression 1.8.2 (híbrido) · lychee 0.24.2 (imagen).
 
 ### Diferencias con la spec por Astro 6/7
 
