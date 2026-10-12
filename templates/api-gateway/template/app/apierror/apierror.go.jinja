@@ -1,10 +1,10 @@
 // Package apierror escribe los errores del gateway en un formato único:
 //
-//	{"error": {"code": "PERMISSION_DENIED", "message": "...", "request_id": "..."}}
+//	{"error": {"code": "PERMISSION_DENIED", "message": "...", "reason": "...", "request_id": "..."}}
 //
 // Nunca lleva stack traces, mensajes internos ni detalles de los upstreams:
 // los 5xx salen con un mensaje genérico y el request_id para buscarlos en los
-// logs (docs/errores.md).
+// logs (docs/rutas.md, «Errores»).
 package apierror
 
 import (
@@ -27,13 +27,22 @@ type Body struct {
 
 // Detail es el contenido de Body.
 type Detail struct {
-	Code      string `json:"code"`
-	Message   string `json:"message"`
+	Code    string `json:"code"`
+	Message string `json:"message"`
+	// Reason es la clave estable del google.rpc.ErrorInfo del servicio
+	// (ej. STALE_ORDER): los clientes hacen switch contra Reason, nunca
+	// contra Message. Solo en errores de dominio (4xx).
+	Reason    string `json:"reason,omitempty"`
 	RequestID string `json:"request_id,omitempty"`
 }
 
 // Write responde status con el formato único.
 func Write(w http.ResponseWriter, r *http.Request, status int, code, message string) {
+	WriteReason(w, r, status, code, message, "")
+}
+
+// WriteReason es Write con la clave estable del error (vacía = sin reason).
+func WriteReason(w http.ResponseWriter, r *http.Request, status int, code, message, reason string) {
 	h := w.Header()
 	h.Set("Content-Type", "application/json; charset=utf-8")
 	h.Set("X-Content-Type-Options", "nosniff")
@@ -42,6 +51,7 @@ func Write(w http.ResponseWriter, r *http.Request, status int, code, message str
 	_ = json.NewEncoder(w).Encode(Body{Error: Detail{
 		Code:      code,
 		Message:   message,
+		Reason:    reason,
 		RequestID: reqctx.RequestID(r.Context()),
 	}})
 }
