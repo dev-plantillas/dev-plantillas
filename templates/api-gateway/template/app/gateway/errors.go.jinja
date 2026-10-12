@@ -7,8 +7,10 @@ import (
 	"net/http"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -40,6 +42,9 @@ var genericMessages = map[codes.Code]string{
 
 const maxClientMessage = 300
 
+// maxReason: largo máximo de google.rpc.ErrorInfo.reason.
+const maxReason = 63
+
 // errorHandler: errores de la llamada gRPC (o de grpc-gateway al armar el
 // request) -> formato único. Los 5xx van al log con el detalle real y el
 // request_id; al cliente, mensaje genérico + request_id.
@@ -55,12 +60,10 @@ func (g *gw) errorHandler(ctx context.Context, _ *runtime.ServeMux, _ runtime.Ma
 		httpStatus = runtime.HTTPStatusFromCode(code)
 	}
 
-	msg := genericMessages[code]
+	msg, reason := genericMessages[code], ""
 	if clientCodes[code] && httpStatus < 500 {
-		msg = st.Message()
-		if len(msg) > maxClientMessage {
-			msg = msg[:maxClientMessage]
-		}
+		reason = reasonOf(st, codeName(code))
+		msg = truncate(st.Message(), maxClientMessage)
 	}
 	if msg == "" {
 		msg = "error interno"
@@ -74,14 +77,57 @@ func (g *gw) errorHandler(ctx context.Context, _ *runtime.ServeMux, _ runtime.Ma
 			slog.String("grpc_message", st.Message()),
 		)
 	}
-	apierror.Write(w, r, httpStatus, codeName(code), msg)
+	apierror.WriteReason(w, r, httpStatus, codeName(code), msg, reason)
+}
+
+// reasonOf: el Reason del primer google.rpc.ErrorInfo válido del status
+// (formato de ErrorInfo: [A-Z][A-Z0-9_]+[A-Z0-9], hasta 63). Uno igual al
+// código (NOT_FOUND) no agrega nada y no sale. Domain y Metadata nunca:
+// pueden llevar datos internos del servicio (OWASP API3).
+func reasonOf(st *status.Status, code string) string {
+	for _, d := range st.Details() {
+		info, ok := d.(*errdetails.ErrorInfo)
+		if !ok || !validReason(info.GetReason()) {
+			continue
+		}
+		if r := info.GetReason(); r != code {
+			return r
+		}
+		return ""
+	}
+	return ""
+}
+
+func validReason(r string) bool {
+	n := len(r)
+	if n < 3 || n > maxReason || r[0] < 'A' || r[0] > 'Z' || r[n-1] == '_' {
+		return false
+	}
+	for i := 1; i < n; i++ {
+		if c := r[i]; !(c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' || c == '_') {
+			return false
+		}
+	}
+	return true
+}
+
+// truncate corta s a n bytes sin partir un carácter UTF-8.
+func truncate(s string, n int) string {
+	if len(s) <= n {
+		return s
+	}
+	for n > 0 && !utf8.RuneStart(s[n]) {
+		n--
+	}
+	return s[:n]
 }
 
 // streamErrorHandler: errores a mitad de un server streaming.
 func (g *gw) streamErrorHandler(ctx context.Context, err error) *status.Status {
 	st := status.Convert(err)
 	if clientCodes[st.Code()] {
-		return st
+		// Sin details: el ErrorInfo puede llevar domain y metadata internos.
+		return status.New(st.Code(), truncate(st.Message(), maxClientMessage))
 	}
 	g.log.ErrorContext(ctx, "error en stream", slog.String("request_id", reqctx.RequestID(ctx)),
 		slog.String("grpc_code", st.Code().String()), slog.String("grpc_message", st.Message()))

@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -228,6 +229,65 @@ func TestErrorInterno500Generico(t *testing.T) {
 	w = e.do(method, path, body)
 	if w.Code != http.StatusServiceUnavailable || strings.Contains(w.Body.String(), "10.0.0.5") {
 		t.Fatalf("Unavailable: %d %s", w.Code, w.Body.String())
+	}
+}
+
+// withInfo arma un status con un google.rpc.ErrorInfo, como los servicios.
+func withInfo(t *testing.T, c codes.Code, msg string, info *errdetails.ErrorInfo) error {
+	t.Helper()
+	st, err := status.New(c, msg).WithDetails(info)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return st.Err()
+}
+
+func TestReasonDelErrorInfo(t *testing.T) {
+	plain, _, _ := pick(t)
+	e := newEnv(t, table(t, fmt.Sprintf("routes:\n  %s:\n    public: true\n", plain.Method)))
+	method, path, body := request(plain)
+
+	// Con ErrorInfo: llega el reason; domain y metadata no.
+	e.up.set(withInfo(t, codes.FailedPrecondition, "el orden cambió", &errdetails.ErrorInfo{
+		Reason: "STALE_ORDER", Domain: "issues.tekitla.internal",
+		Metadata: map[string]string{"project_id": "p-interno-123"},
+	}), 0)
+	w := e.do(method, path, body)
+	d := decodeErr(t, w.Body.String())
+	if w.Code != http.StatusBadRequest || d.Code != "FAILED_PRECONDITION" || d.Reason != "STALE_ORDER" || d.Message != "el orden cambió" {
+		t.Fatalf("FailedPrecondition con reason: %d %s", w.Code, w.Body.String())
+	}
+	if strings.Contains(w.Body.String(), "issues.tekitla.internal") || strings.Contains(w.Body.String(), "p-interno-123") {
+		t.Fatalf("el body filtra domain o metadata: %s", w.Body.String())
+	}
+
+	// Sin ErrorInfo: sin campo reason.
+	e.up.set(status.Error(codes.AlreadyExists, "ya existe"), 0)
+	w = e.do(method, path, body)
+	if w.Code != http.StatusConflict || strings.Contains(w.Body.String(), `"reason"`) {
+		t.Fatalf("sin ErrorInfo: %d %s", w.Code, w.Body.String())
+	}
+
+	// Reason que no es UPPER_SNAKE: no se reenvía.
+	e.up.set(withInfo(t, codes.InvalidArgument, "mal", &errdetails.ErrorInfo{Reason: "pq: <script>"}), 0)
+	w = e.do(method, path, body)
+	if w.Code != http.StatusBadRequest || strings.Contains(w.Body.String(), `"reason"`) {
+		t.Fatalf("reason inválido: %d %s", w.Code, w.Body.String())
+	}
+
+	// Reason igual al código (lo que manda el servicio sin WithReason): no sale.
+	e.up.set(withInfo(t, codes.NotFound, "no existe", &errdetails.ErrorInfo{Reason: "NOT_FOUND"}), 0)
+	w = e.do(method, path, body)
+	if w.Code != http.StatusNotFound || strings.Contains(w.Body.String(), `"reason"`) {
+		t.Fatalf("reason igual al código: %d %s", w.Code, w.Body.String())
+	}
+
+	// 5xx: ni mensaje ni reason del servicio.
+	e.up.set(withInfo(t, codes.Internal, "pq: boom", &errdetails.ErrorInfo{Reason: "DB_DOWN"}), 0)
+	w = e.do(method, path, body)
+	if w.Code != http.StatusInternalServerError || strings.Contains(w.Body.String(), `"reason"`) ||
+		strings.Contains(w.Body.String(), "pq: boom") {
+		t.Fatalf("5xx con reason o mensaje interno: %d %s", w.Code, w.Body.String())
 	}
 }
 
