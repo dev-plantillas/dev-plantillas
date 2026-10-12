@@ -29,6 +29,8 @@ GoogleService-Info.plist
 /node_modules
 npm-debug.log*
 .npmrc
+# El .npmrc del repo no lleva secretos: lee el token de NODE_AUTH_TOKEN.
+!/.npmrc
 .npm/
 
 # ======================================================

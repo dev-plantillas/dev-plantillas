@@ -2,8 +2,8 @@
 #
 # Imagen de {{ app_name }} para Coolify (o cualquier host de contenedores).
 #
-#   docker build --build-arg APP_ENV=qa   -t {{ app_name }}:qa   .
-#   docker build --build-arg APP_ENV=prod -t {{ app_name }}:prod .
+#   docker build --secret id=npm_token,env=NODE_AUTH_TOKEN --build-arg APP_ENV=qa   -t {{ app_name }}:qa   .
+#   docker build --secret id=npm_token,env=NODE_AUTH_TOKEN --build-arg APP_ENV=prod -t {{ app_name }}:prod .
 #
 # Angular hornea la configuración del ambiente (src/environments/environment.<x>.ts)
 # en el bundle al compilar: por eso hay UNA IMAGEN POR AMBIENTE y el ambiente se
@@ -14,8 +14,11 @@ FROM node:24-alpine AS build
 WORKDIR /app
 
 # Primero sólo las dependencias: esta capa se reutiliza mientras no cambie el lock.
-COPY package.json package-lock.json ./
-RUN npm ci --no-audit --no-fund
+# El design system (@vrojas1015/vrb) viene de GitHub Packages: el token entra como
+# secret de BuildKit y no queda en la imagen.
+COPY package.json package-lock.json .npmrc ./
+RUN --mount=type=secret,id=npm_token \
+    NODE_AUTH_TOKEN="$(cat /run/secrets/npm_token)" npm ci --no-audit --no-fund
 
 COPY . .
 

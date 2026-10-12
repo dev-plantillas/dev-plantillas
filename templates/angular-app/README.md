@@ -4,7 +4,7 @@ Plantilla [Copier](https://copier.readthedocs.io/) para apps frontend del equipo
 Angular 21 standalone + signals, SCSS/BEM, cliente API tipado, Firebase Auth + JWT
 propio (opcional), @ngx-translate (opcional), vitest + Playwright, y CI/CD en
 GitLab o GitHub con deploy keyless a Firebase Hosting o a Coolify v4 en un VPS
-propio (opcional).
+propio (opcional). Toda la interfaz usa el design system vrb (`@vrojas1015/vrb`).
 
 Está extraída del patrón de la app de admin existente, sin nombres ni IDs reales.
 
@@ -15,6 +15,7 @@ Está extraída del patrón de la app de admin existente, sin nombres ni IDs rea
 ├── CLAUDE.md                     contexto corto para agentes (stack, estructura, reglas)
 ├── .claude/settings.json         permisos allow/deny para Claude Code
 ├── .gitlab-ci.yml | .github/     CI: MR/PR → lint + unit + build; deploy según deploy_target
+├── .npmrc                        @vrojas1015 → GitHub Packages, token por NODE_AUTH_TOKEN
 ├── docs/ci-cd-setup.md           setup de una vez del deploy elegido + variables del CI
 ├── docs/migrar-a-firebase-hosting.md   (si deploy_target = coolify)
 ├── docs/estilos-bem.md           convención SCSS + BEM
@@ -25,14 +26,14 @@ Está extraída del patrón de la app de admin existente, sin nombres ni IDs rea
 ├── public/i18n/<lang>.json       (si i18n)
 └── src/
     ├── environments/             environment.ts (dev) · .qa.ts · .prod.ts
-    ├── styles/                   tokens, reset, tipografía, mixins
+    ├── styles/                   tokens, reset, tipografía, mixins (alias a --vrb-*) + fuentes IBM Plex
     └── app/
         ├── api/                  RestClient, DomainError, interceptores, SKIP_AUTH
         ├── core/                 auth (SessionStore, AuthService, guard) · i18n
         ├── features/items/       ejemplo: lista + detalle con store de signals y client tipado
         ├── features/auth/        login (si use_firebase_auth)
-        ├── layout/shell/         header + nav + outlet
-        └── ui/components/button/ componente ui de ejemplo
+        ├── layout/shell/         vrb-shell: sidebar + migas de pan (ShellNav) + outlet
+        └── ui/components/        button (clases vrb-button) · icon
 ```
 
 ## Preguntas
@@ -55,6 +56,24 @@ Está extraída del patrón de la app de admin existente, sin nombres ni IDs rea
 No se pregunta ni se genera ningún secreto, número de proyecto, audience de WIF,
 email de service account ni token/UUID de Coolify: son variables del CI documentadas
 en `docs/ci-cd-setup.md`.
+
+## Design system
+
+Toda la interfaz usa el design system **vrb** (`@vrojas1015/vrb` 0.2.0); no es
+opcional. **Lo que falte se agrega a vrb, no CSS suelto en el proyecto.**
+
+| | |
+|---|---|
+| Estilos | `dist/vrb.css` en `angular.json`, clases `vrb-*`, variables `--vrb-*` |
+| Tokens | `src/styles/_tokens.scss` son alias a `--vrb-*` (para el SCSS de acomodo de página) |
+| Fuentes | IBM Plex (`_fonts.scss`; los `.woff2` se copian del paquete a `/fonts`) |
+| Shell | `vrb-shell`: sidebar (cajón bajo 900 px), migas de pan (`ShellNav`), skip link, cuenta en el pie (con auth) |
+| `ui/` | `button` con clases `vrb-button` (variantes `primary`, `secondary`, `outline`, `ghost`, `danger`; tamaños `sm`, `md`, `lg`) e `icon` (trazos SVG) |
+| Instalar | paquete **privado** de GitHub Packages: `.npmrc` versionado (sin token) lee `NODE_AUTH_TOKEN`; en local `NODE_AUTH_TOKEN=$(gh auth token)` (scope `read:packages`); en el CI `NPM_TOKEN` (GitHub: secret, con `GITHUB_TOKEN` + `packages: read` de respaldo; GitLab: variable CI/CD; Docker: secret de BuildKit) |
+
+Lo propio de cada producto (logo, avatar, colores de dominio) va en el proyecto o
+en vrb, no aquí. Lo que un proyecto agrega y sirve a todos vuelve a la plantilla
+(ver `docs/10-base-comun-de-repos.md` de dev-plantillas).
 
 ## Destinos de deploy
 
@@ -127,7 +146,8 @@ SemVer (`v1.0.0`). El proyecto tiene que estar commiteado y limpio antes de actu
    environment con la config web del proyecto; confirmar con backend que existen
    `POST /v1/auth/login|refresh|logout` con los contratos de `core/auth/auth.contracts.ts`
    (si no, issue al backend; no adaptar el front a un endpoint inventado).
-6. Reemplazar los tokens de `src/styles/_tokens.scss` por los del sistema de diseño.
+6. Crear el secret/variable `NPM_TOKEN` para instalar vrb en el CI
+   (`docs/ci-cd-setup.md`, «Paquetes privados»).
 7. Crear la primera feature real copiando la estructura de `features/items` y
    **borrar `features/items`** (y su e2e) cuando ya no sirva de ejemplo.
 8. Si `deploy_target = firebase-hosting`: seguir `docs/ci-cd-setup.md` (WIF por

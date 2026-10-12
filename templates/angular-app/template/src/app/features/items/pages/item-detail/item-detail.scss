@@ -1,35 +1,22 @@
-@use 'mixins' as m;
-
-// Bloque BEM: .item-detail
+// Bloque BEM: .item-detail. La tarjeta y el aviso salen de vrb; aquí sólo el
+// acomodo.
 .item-detail {
-  @include m.card;
   display: grid;
   gap: var(--space-3);
   padding: var(--space-6);
 
   &__back {
     font-size: var(--text-small);
-    color: var(--color-primary);
     text-decoration: none;
-    @include m.focus-visible;
   }
 
   &__title {
     margin: 0;
   }
 
-  &__description {
-    margin: 0;
-  }
-
   &__meta {
     margin: 0;
-    color: var(--text-muted);
+    color: var(--vrb-muted-fg);
     font-size: var(--text-small);
-  }
-
-  &__error {
-    margin: 0;
-    color: var(--system-error);
   }
 }

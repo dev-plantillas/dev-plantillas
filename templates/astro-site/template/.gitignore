@@ -22,7 +22,7 @@ GoogleService-Info.plist
 # Node
 /node_modules
 npm-debug.log*
-.npmrc
+# .npmrc sí se versiona: sólo apunta @vrojas1015 a GitHub Packages; el token va en NODE_AUTH_TOKEN.
 
 # Variables de entorno (nunca se commitean secretos; .env.example sí)
 .env

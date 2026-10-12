@@ -22,7 +22,7 @@ on:
 
 permissions:
   contents: read
-  packages: write # push de la imagen a GHCR
+  packages: write # push de la imagen a GHCR y lectura de @vrojas1015/vrb
 
 jobs:
   deploy:
@@ -43,6 +43,13 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+{%- endraw %}
+        env:
+          # Design system vrb desde GitHub Packages (.npmrc). NPM_TOKEN: token clásico
+          # con read:packages; sin él se intenta con el GITHUB_TOKEN del workflow (sólo
+          # alcanza si el paquete le dio acceso a este repo).
+          NODE_AUTH_TOKEN: {% raw %}${{ secrets.NPM_TOKEN || secrets.GITHUB_TOKEN }}{% endraw %}
+{%- raw %}
       - run: npm run test:unit
 
       - name: Nombre de la imagen (GHCR exige minúsculas)
@@ -61,6 +68,11 @@ jobs:
           context: .
           push: true
           build-args: APP_ENV=${{ env.APP_ENV }}
+{%- endraw %}
+          # npm ci lee el design system de GitHub Packages (ver Dockerfile)
+          secrets: |
+            npm_token={% raw %}${{ secrets.NPM_TOKEN || secrets.GITHUB_TOKEN }}{% endraw %}
+{%- raw %}
           tags: |
             ${{ env.IMAGE }}:${{ github.ref_name }}
             ${{ env.IMAGE }}:${{ env.APP_ENV }}

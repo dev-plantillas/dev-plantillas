@@ -14,6 +14,8 @@ _message_after_copy: |
     cd {{ _copier_conf.dst_path }}
     git init -b main   (si todavía no es un repo)
     npm install        (genera package-lock.json: commitealo, el CI usa `npm ci`)
+                       vrb viene de GitHub Packages: antes exporta NODE_AUTH_TOKEN
+                       con read:packages (p. ej. NODE_AUTH_TOKEN=$(gh auth token))
     cp .env.example .env
     npm run dev        → http://localhost:4321
     npm run verificar  (build + test de SEO + JSON-LD)
@@ -47,7 +49,7 @@ site_url:
   default: https://www.ejemplo.com
   validator: >-
     {% if not (site_url | regex_search('^https://[a-z0-9.-]+\.[a-z]{2,}$')) %}
-    Usá https://dominio.tld en minúsculas, sin barra ni ruta final.
+    Usa https://dominio.tld en minúsculas, sin barra ni ruta final.
     {% endif %}
 
 idiomas:
@@ -83,7 +85,7 @@ api_base_url:
   when: "{{ entidades_api }}"
   validator: >-
     {% if not (api_base_url | regex_search('^https?://[^/\s]+$')) %}
-    Usá http(s)://host, sin barra ni ruta final.
+    Usa http(s)://host, sin barra ni ruta final.
     {% endif %}
 
 render:

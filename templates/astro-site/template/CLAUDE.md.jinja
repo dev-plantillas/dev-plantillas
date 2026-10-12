@@ -15,6 +15,8 @@ padre; acá sólo lo propio.
 {%- if ent %}
 - Entidades: catálogo desde el api-gateway (`src/lib/api`); en dev y CI, fixture local (`PUBLIC_API_FUENTE=mock`)
 {%- endif %}
+- Design system **vrb** (`@vrojas1015/vrb`, importado en `Base.astro`): clases `vrb-*` y
+  variables `--vrb-*`; IBM Plex del paquete servida por Astro (`fonts` en `astro.config.mjs`)
 - Calidad: prettier + eslint, `astro check`, test de SEO y de JSON-LD sobre `dist/`, lychee, Lighthouse CI
 
 ## Estructura
@@ -49,6 +51,13 @@ padre; acá sólo lo propio.
 - Imágenes con `astro:assets` (`<Image>`/`<Picture>`, con `widths` y `sizes`); la del
   LCP con `loading="eager"` y `fetchpriority="high"`. Nada de imágenes enormes en `public/`.
 - Datos estructurados siempre con tipos de `schema-dts` vía `<Base jsonLd={[...]}>`.
+- **Toda interfaz usa el design system vrb; lo que falte se agrega a vrb, no CSS suelto en el
+  proyecto.** Botones, tarjetas, insignias, campos y migas son clases `vrb-*` (catálogo en
+  `node_modules/@vrojas1015/vrb/design-system/scss/`); `src/styles/global.css` sólo acomoda el
+  layout y lee `--vrb-*`. Si falta algo, PR al repo de vrb y se sube la dependencia aquí.
+- **Paquetes privados** desde GitHub Packages: `.npmrc` (versionado, sin token) lee
+  `NODE_AUTH_TOKEN`. En local `NODE_AUTH_TOKEN=$(gh auth token) npm ci` (scope `read:packages`); en
+  el CI, {{ 'la variable CI/CD' if ci_gl else 'el secret' }} `NPM_TOKEN`{% if d_cr %} (y en Cloud Build el secreto `npm-token` de Secret Manager){% endif %}. Nunca un token escrito en `.npmrc`.
 - Textos de UI en `src/i18n/textos.ts`, nunca sueltos en componentes.
 - Variables por ambiente con `astro:env` (esquema en `astro.config.mjs`); `PUBLIC_ENTORNO`
   decide indexación: sólo `prod` indexa.

@@ -7,7 +7,9 @@ plataforma están en los `CLAUDE.md` de las carpetas padre; acá sólo lo propio
 
 - Angular 21 standalone, zoneless, control flow (`@if`/`@for`), signal inputs
 - Estado: signals + stores propios por feature (sin NgRx)
-- SCSS + BEM, tokens CSS en `src/styles/_tokens.scss`
+- Design system **vrb** (`@vrojas1015/vrb`): clases `vrb-*` en los templates y variables `--vrb-*`
+  (`dist/vrb.css` cargado en `angular.json`; IBM Plex en `src/styles/_fonts.scss`). El SCSS del
+  componente (BEM) sólo acomoda la página; `src/styles/_tokens.scss` son alias a `--vrb-*`
 {%- if use_firebase_auth %}
 - Auth: Firebase Auth (sólo para obtener el ID token) → JWT propio del backend
   (access token en memoria, refresh token en localStorage)
@@ -24,8 +26,8 @@ plataforma están en los `CLAUDE.md` de las carpetas padre; acá sólo lo propio
 | `api/` | Cliente HTTP base (`RestClient`), errores (`DomainError`), interceptores, `SKIP_AUTH` |
 | `core/` | Singletons de infraestructura{% if use_firebase_auth %} (auth: SessionStore, AuthService, guard){% endif %}{% if i18n %}, i18n{% endif %} |
 | `features/<x>/` | Una carpeta por feature: `<x>.routes.ts`, `data-access/` (client, contracts, store, specs), `pages/` |
-| `layout/` | Marco de la app: `shell` (header, nav, outlet) |
-| `ui/` | Componentes visuales reutilizables, sin lógica de negocio (selector `ui-*`) |
+| `layout/` | Marco de la app: `shell` (`vrb-shell`: sidebar, migas de pan con `ShellNav`, outlet) |
+| `ui/` | Componentes visuales reutilizables, sin lógica de negocio (selector `ui-*`: `button`, `icon`) |
 
 Otros: `src/environments` (dev/qa/prod), `src/styles` (base global), `src/types` (`.d.ts`), `e2e/`.
 
@@ -41,6 +43,15 @@ Otros: `src/environments` (dev/qa/prod), `src/styles` (base global), `src/types`
 - **Errores**: todo error HTTP llega como `DomainError` (`isNotFound()`, `isValidation()`, …).
 - **BEM**: un bloque por componente (`.item-list`, `.item-list__row`, `.item-list__row--active`),
   sólo `var(--token)` para colores/espacios. Detalle en `docs/estilos-bem.md`.
+- **Toda interfaz usa el design system vrb; lo que falte se agrega a vrb, no CSS suelto en el
+  proyecto.** Antes de escribir estilos, buscar la clase en vrb (`vrb-button`, `vrb-card`,
+  `vrb-field`, `vrb-dialog`, `vrb-sidebar`, `vrb-breadcrumb`…; catálogo en
+  `node_modules/@vrojas1015/vrb/design-system/scss/`). Si no existe, se agrega al repo de vrb
+  (PR y versión nueva) y aquí se sube la dependencia; nunca colores, fuentes ni componentes
+  visuales propios en el SCSS del proyecto.
+- **Paquetes privados** desde GitHub Packages: `.npmrc` (versionado, sin token) lee
+  `NODE_AUTH_TOKEN`. En local `NODE_AUTH_TOKEN=$(gh auth token) npm ci` (scope `read:packages`); en
+  el CI, {{ 'la variable CI/CD' if ci_provider == 'gitlab' else 'el secret' }} `NPM_TOKEN`. Nunca un token escrito en `.npmrc`.
 - **Nombres**: archivos kebab-case sin sufijo (`item-list.ts`, clase `ItemList`); prefijo `app-` en
   features/layout y `ui-` en `ui/`.
 - **Imports** absolutos con `@/` (`@/app/api`, `@/environments/environment`).

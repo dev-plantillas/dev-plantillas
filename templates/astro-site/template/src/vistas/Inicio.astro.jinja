@@ -35,7 +35,7 @@ const ultimos = (await postsDe(idioma)).slice(0, 3)
       <p class="portada__bajada">{t(idioma, 'inicio.bajada')}</p>
 {%- if ent %}
       <p>
-        <a class="boton" href={ruta(idioma, '/catalogo/')}>
+        <a class="vrb-button vrb-button--primary" href={ruta(idioma, '/catalogo/')}>
           {t(idioma, 'nav.catalogo')}
         </a>
       </p>
@@ -59,7 +59,7 @@ const ultimos = (await postsDe(idioma)).slice(0, 3)
       <h2 id="ultimos">{t(idioma, 'inicio.ultimos')}</h2>
       <ul class="tarjetas" role="list">
         {ultimos.map((post) => (
-          <li class="tarjeta">
+          <li class="vrb-card tarjeta">
             <h3>
               <a href={urlDe(post)}>{post.data.title}</a>
             </h3>

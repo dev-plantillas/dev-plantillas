@@ -1,6 +1,6 @@
 ---
-// Migas de pan visibles. El JSON-LD BreadcrumbList sale de los mismos datos
-// (seo.migas) en la vista que lo usa.
+// Migas de pan visibles (vrb-breadcrumb del design system). El JSON-LD
+// BreadcrumbList sale de los mismos datos (seo.migas) en la vista que lo usa.
 import type { Miga } from '@/lib/seo'
 
 interface Props {
@@ -10,14 +10,20 @@ interface Props {
 const { items } = Astro.props
 ---
 
-<nav class="migas" aria-label="Breadcrumb">
-  <ol>
+<nav class="vrb-breadcrumb migas" aria-label="Breadcrumb">
+  <ol class="vrb-breadcrumb__list">
     {items.map((m, i) =>
       i === items.length - 1 ? (
-        <li aria-current="page">{m.nombre}</li>
+        <li class="vrb-breadcrumb__item">
+          <span class="vrb-breadcrumb__page" aria-current="page">
+            {m.nombre}
+          </span>
+        </li>
       ) : (
-        <li>
-          <a href={m.camino}>{m.nombre}</a>
+        <li class="vrb-breadcrumb__item">
+          <a class="vrb-breadcrumb__link" href={m.camino}>
+            {m.nombre}
+          </a>
         </li>
       ),
     )}

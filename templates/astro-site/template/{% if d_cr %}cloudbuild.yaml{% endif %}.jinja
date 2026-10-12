@@ -4,20 +4,28 @@
 # build corre bajo un service account impersonado (WIF).
 
 steps:
+  # El design system (@vrojas1015/vrb) viene de GitHub Packages: el token sale de
+  # Secret Manager (secreto `npm-token`, ver docs/deploy.md) y entra al build como
+  # secret de BuildKit, sin quedar en la imagen ni en el log.
   - name: gcr.io/cloud-builders/docker
+    entrypoint: bash
     env:
       - DOCKER_BUILDKIT=1
+    secretEnv: ['NPM_TOKEN']
     args:
-      - build
-      - --build-arg
-      - PUBLIC_ENTORNO=${_ENTORNO}
+      - -c
+      - >-
+        docker build --secret id=npm_token,env=NPM_TOKEN
+        --build-arg PUBLIC_ENTORNO=${_ENTORNO}
 {%- if ga4 %}
-      - --build-arg
-      - PUBLIC_GA4_ID=${_GA4_ID}
+        --build-arg PUBLIC_GA4_ID=${_GA4_ID}
 {%- endif %}
-      - -t
-      - ${_IMAGE}
-      - .
+        -t ${_IMAGE} .
+
+availableSecrets:
+  secretManager:
+    - versionName: projects/$PROJECT_ID/secrets/npm-token/versions/latest
+      env: NPM_TOKEN
 
 images:
   - ${_IMAGE}

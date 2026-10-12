@@ -12,6 +12,9 @@ import JsonLd from '@/components/seo/JsonLd.astro'
 import Seo, { type Props as SeoProps } from '@/components/seo/Seo.astro'
 import { t } from '@/i18n/textos'
 import type { Nodo } from '@/lib/seo'
+import { Font } from 'astro:assets'
+// Design system (variables --vrb-* y componentes vrb-) antes de los estilos propios.
+import '@vrojas1015/vrb/min.css'
 import '@/styles/global.css'
 
 export interface Props extends SeoProps {
@@ -28,7 +31,9 @@ const { jsonLd = [], ...seo } = Astro.props
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <meta name="theme-color" content="#0b3d91" />
+    <meta name="theme-color" content="#0073ad" />
+    <Font cssVariable="--font-sans" preload={[{ weight: 400 }]} />
+    <Font cssVariable="--font-mono" preload={[{ weight: 600 }]} />
     <Seo {...seo} />
 {%- if blog %}
     <link

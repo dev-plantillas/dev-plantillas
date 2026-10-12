@@ -23,6 +23,7 @@ on:
 permissions:
   contents: read
   id-token: write # token OIDC para WIF
+  packages: read # design system @vrojas1015/vrb en GitHub Packages
 
 jobs:
   deploy:
@@ -48,6 +49,10 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+        env:
+          # Design system vrb desde GitHub Packages (.npmrc): NPM_TOKEN o, si el
+          # paquete le dio acceso a este repo, el GITHUB_TOKEN.
+          NODE_AUTH_TOKEN: {% raw %}${{ secrets.NPM_TOKEN || secrets.GITHUB_TOKEN }}{% endraw %}
       - run: npm run build
       - name: Test de SEO del ambiente (qa → noindex, prod → indexable)
         run: npm run test:seo
@@ -108,7 +113,7 @@ on:
 
 permissions:
   contents: read
-  packages: write # push de la imagen a GHCR
+  packages: write # push de la imagen a GHCR y lectura de @vrojas1015/vrb
 
 jobs:
   deploy:
@@ -146,6 +151,9 @@ jobs:
             PUBLIC_GA4_ID={% raw %}${{ vars.PUBLIC_GA4_ID }}{% endraw %}
 {%- endif %}
 {%- raw %}
+          # npm ci lee el design system de GitHub Packages (ver Dockerfile)
+          secrets: |
+            npm_token=${{ secrets.NPM_TOKEN || secrets.GITHUB_TOKEN }}
           tags: |
             ${{ env.IMAGE }}:${{ github.ref_name }}
             ${{ env.IMAGE }}:${{ env.PUBLIC_ENTORNO }}

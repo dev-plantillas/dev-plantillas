@@ -9,6 +9,14 @@ on:
 
 permissions:
   contents: read
+  packages: read # @vrojas1015/vrb (design system de angular-app y astro-site)
+
+# angular-app y astro-site instalan @vrojas1015/vrb desde GitHub Packages. El token
+# es el secret NPM_TOKEN (token clásico con read:packages) o, si el paquete le dio
+# acceso a este repo, el GITHUB_TOKEN. Sin acceso, esos jobs generan la plantilla y
+# avisan (::warning::) en vez de instalar y compilar.
+env:
+  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN || secrets.GITHUB_TOKEN }}
 
 jobs:
   go-grpc-service:
@@ -102,7 +110,18 @@ jobs:
             templates/angular-app "$RUNNER_TEMP/demo-web"
       - uses: actions/setup-node@v4
         with: { node-version: "24" }
+      - name: Acceso a @vrojas1015/vrb (GitHub Packages)
+        id: vrb
+        working-directory: ${{ runner.temp }}/demo-web
+        run: |
+          if npm view @vrojas1015/vrb version > /dev/null 2>&1; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::Sin acceso a @vrojas1015/vrb: falta el secret NPM_TOKEN (token clásico con read:packages). La plantilla se generó pero no se instaló ni se compiló."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          fi
       - name: Install, lint, tests y build
+        if: steps.vrb.outputs.ok == 'true'
         working-directory: ${{ runner.temp }}/demo-web
         run: |
           npm install --no-audit --no-fund
@@ -110,10 +129,10 @@ jobs:
           npm run test:unit
           npm run build
       - name: Imagen Docker (coolify)
-        if: matrix.deploy == 'coolify'
+        if: matrix.deploy == 'coolify' && steps.vrb.outputs.ok == 'true'
         working-directory: ${{ runner.temp }}/demo-web
         run: |
-          docker build --build-arg APP_ENV=prod -t demo-web:ci .
+          docker build --secret id=npm_token,env=NODE_AUTH_TOKEN --build-arg APP_ENV=prod -t demo-web:ci .
           docker run -d --name web -p 8080:80 demo-web:ci
           for i in $(seq 1 20); do curl -fsS -o /dev/null http://localhost:8080/ && break; sleep 1; done
           curl -fsS http://localhost:8080/ | grep -q '<app-root'
@@ -383,13 +402,25 @@ jobs:
             templates/astro-site "$RUNNER_TEMP/sitio"
       - uses: actions/setup-node@v4
         with: { node-version: "24" }
+      - name: Acceso a @vrojas1015/vrb (GitHub Packages)
+        id: vrb
+        working-directory: ${{ runner.temp }}/sitio
+        run: |
+          if npm view @vrojas1015/vrb version > /dev/null 2>&1; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::Sin acceso a @vrojas1015/vrb: falta el secret NPM_TOKEN (token clásico con read:packages). La plantilla se generó pero no se instaló ni se compiló."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          fi
       - name: Install, lint, astro check + build
+        if: steps.vrb.outputs.ok == 'true'
         working-directory: ${{ runner.temp }}/sitio
         run: |
           npm install --no-audit --no-fund
           npm run lint
           npm run build
       - name: Test de SEO y JSON-LD
+        if: steps.vrb.outputs.ok == 'true'
         working-directory: ${{ runner.temp }}/sitio
         run: |
           if [ -f servidor.mjs ]; then
@@ -401,13 +432,14 @@ jobs:
           npm run test:seo
           npm run test:jsonld
       - name: Lighthouse CI (SEO 100, a11y ≥ 95, best practices ≥ 95, perf ≥ 90 móvil)
+        if: steps.vrb.outputs.ok == 'true'
         working-directory: ${{ runner.temp }}/sitio
         run: npx lhci autorun
       - name: Imagen Docker (coolify)
-        if: matrix.deploy == 'coolify'
+        if: matrix.deploy == 'coolify' && steps.vrb.outputs.ok == 'true'
         working-directory: ${{ runner.temp }}/sitio
         run: |
-          docker build --build-arg PUBLIC_ENTORNO=prod -t sitio:ci .
+          docker build --secret id=npm_token,env=NODE_AUTH_TOKEN --build-arg PUBLIC_ENTORNO=prod -t sitio:ci .
           docker run -d --name sitio -p 8080:80 sitio:ci
           for _ in $(seq 1 20); do curl -fsS -o /dev/null http://localhost:8080/ && break; sleep 1; done
           curl -fsS http://localhost:8080/ | grep -q '<link rel="canonical"'
