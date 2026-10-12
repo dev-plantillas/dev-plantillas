@@ -27,3 +27,14 @@ regexTarget = "match"
 regexes = [
   '''^aria-keyshortcuts="[A-Za-z+ ]*"?$''',
 ]
+
+# La config web de Firebase (apiKey «AIza…») no es secreta: termina en el
+# bundle y la protegen las reglas de Firebase y las restricciones de la clave.
+# Sólo las reglas de claves de API y sólo en src/environments (config pública del
+# front): una clave en cualquier otro archivo se sigue detectando.
+[[allowlists]]
+description = "Config web de Firebase en src/environments (pública por diseño)"
+targetRules = ["gcp-api-key", "generic-api-key"]
+paths = [
+  '''(^|/)src/environments/environment(\.[\w-]+)?\.ts$''',
+]
