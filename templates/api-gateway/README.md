@@ -59,7 +59,7 @@ cd api-gateway && go build ./... && go test ./...
 | `docs_repo` | vacío | URL del repo de docs: la plantilla de MR/PR enlaza la carpeta del issue ahí |
 | `module_path` | `<host>/mi-org/<repo_name>` | `go.mod` |
 | `http_port` | `8080` | `HTTP_PORT`, Dockerfile, probes |
-| `go_version` | `1.26.9` | ≥ 1.26 (grpc-gateway v2.31) |
+| `go_version` | `1.26.10` | ≥ 1.26 (grpc-gateway v2.31) |
 | `protos_module` (+ `protos_version`) | vacío | Repo de protos (plantilla `protos`, `http_gateway=true`): cablea `GOPRIVATE`, token en CI y `make workspace`. El cambio de imports es manual (ver CLAUDE.md del proyecto) |
 | `auth` | `firebase` | `firebase` \| `oidc` \| `api-key` \| `ninguno` |
 | `firebase_project` | — | Solo firebase: default de `FIREBASE_PROJECT_ID` |
