@@ -11,14 +11,15 @@ Leyenda: ✅ publicada · 🔨 en construcción · 📐 especificada · 💭 ide
 
 | Plantilla | Estado | Versión | Spec |
 |---|---|---|---|
-| `go-grpc-service` | ✅ | v0.2.1 | `docs/04` |
-| `protos` | ✅ | v0.2.0 | — |
-| `api-gateway` (fase 1) | ✅ | v0.1.0 | `docs/05` |
-| `angular-app` | ✅ | v0.2.0 | `docs/07` |
-| `docs` | ✅ | v0.1.0 | `docs/06` |
-| `astro-site` | 🔨 | — | `docs/07` |
-| `android-app` | 🔨 | — | `docs/09` |
-| `e2e-tests` | 🔨 | — | `docs/12` |
+| `go-grpc-service` | ✅ | v0.3.0 | `docs/04` |
+| `protos` | ✅ | v0.3.0 | — |
+| `api-gateway` (fase 1) | ✅ | v0.2.0 | `docs/05` |
+| `angular-app` | ✅ | v0.3.0 | `docs/07` |
+| `docs` | ✅ | v0.3.0 | `docs/06` |
+| `astro-site` | ✅ | v0.2.0 | `docs/07` |
+| `android-app` | ✅ | v0.2.0 | `docs/09` |
+| `e2e-tests` | ✅ | v0.2.0 | `docs/12` |
+| `api-gateway` con MCP (`mcp: true`) | 📐 | — | `docs/15` |
 | `observabilidad-stack` | 📐 | — | `docs/14` |
 | `react-app` | 📐 | — | `docs/07`, `docs/13` |
 | `python-grpc-service` | 💭 | — | `docs/13` |
@@ -29,8 +30,11 @@ Leyenda: ✅ publicada · 🔨 en construcción · 📐 especificada · 💭 ide
 | Pieza | Estado | Spec |
 |---|---|---|
 | Plugin `dev-agentes`: `/verificar`, hooks `guard-worktree` y `format` | ✅ | `plugins/dev-agentes` |
+| Plugin `dev-agentes` v2: hooks de estado del agente, `/issue-start`, `/cerrar-issue`, `/coordinar` | 📐 | `docs/03` |
+| Gestión de agentes: actores, estados, protocolo con el tracker, `AGENTS.md` | 📐 | `docs/03` |
+| MCP: servidores aprobados, `.mcp.json` y permisos en `_base` | 📐 | `docs/15` |
 | Destinos de deploy Google / Coolify y migración entre ellos | ✅ | `docs/04` |
-| Base común de repos, fase 1 (`templates/_base`: gitleaks, `.gitignore` de secretos, `SECURITY.md`, `CODEOWNERS`, plantilla de MR/PR, título del MR/PR) | 🔨 | `docs/10` §11 |
+| Base común de repos, fase 1 (`templates/_base`: gitleaks, `.gitignore` de secretos, `SECURITY.md`, `CODEOWNERS`, plantilla de MR/PR, título del MR/PR) | ✅ | `docs/10` §11 |
 | Base común de repos, fases 2–5 (manifiesto, Renovate, release-please, protección) | 📐 | `docs/10` |
 | Repo `ci` de pipelines reutilizables | 📐 | `docs/11` |
 | Pruebas en el flujo (estándar) | 📐 | `docs/12` |
@@ -39,13 +43,15 @@ Leyenda: ✅ publicada · 🔨 en construcción · 📐 especificada · 💭 ide
 
 ## Próximo (en este orden)
 
-1. **Terminar lo que está en construcción:** `astro-site`, `android-app`,
-   `e2e-tests`; publicarlas y sumarlas al catálogo.
-2. **Base común, fase 1** sobre todas las plantillas: construida en
-   `templates/_base` + `scripts/sincronizar-base.py` (gitleaks en pre-commit y
-   CI, `.gitignore` de secretos, `SECURITY.md`, `CODEOWNERS`, plantilla de MR/PR
-   común, chequeo del título); falta publicar una versión nueva de cada
-   plantilla. — `docs/10` §11
+1. **Publicar lo que ya está en `main`:** el design system vrb (#24) y el
+   `reason` del `ErrorInfo` en el gateway (#25) se mergearon después de la
+   última publicación (2026-10-10); las 8 plantillas tienen cambios sin
+   publicar. Versión nueva de cada una con `scripts/publish-template.sh`.
+2. **MCP y gestión de agentes**, fase 1: `docs/15` y `docs/03` aprobados,
+   `AGENTS.md` junto a `CLAUDE.md`, `.mcp.json` y permisos MCP en `_base`, hooks
+   de estado en `dev-agentes`. El tracker de referencia es Tekitla
+   (`tekitla-mcp`), que se construye con la opción `mcp: true` del gateway.
+   — `docs/03` §12, `docs/15` §12
 3. **CLI `dp` H1–H2** (`list` y `new`): a partir de acá `dp` reemplaza los
    comandos largos de Copier. — `docs/08` §9
 4. **Observabilidad, fase 1:** trazas + logs correlacionados en `go-grpc-service`

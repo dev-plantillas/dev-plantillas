@@ -80,6 +80,7 @@ repos: [protos, orders-service, api-gateway, admin-web]   # en orden de ejecuciÃ
 creado: 2026-10-09
 resuelto: null
 relacionados: [37]
+tracker: RND-42           # opcional: clave del issue en el tracker (docs/03 Â§6)
 ---
 ```
 

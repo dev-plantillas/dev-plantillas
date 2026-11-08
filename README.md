@@ -26,7 +26,7 @@ Estado y prioridades: [`ROADMAP.md`](ROADMAP.md).
 | `scripts/publish-template.sh` | Publica una plantilla en su propio repo con tag |
 | `docs/01-estructura-de-carpetas.md` | Layout local del equipo |
 | `docs/02-repositorios-gitlab-github.md` | Organización, nombres, protección y CI en GitLab/GitHub |
-| `docs/03-flujo-de-trabajo.md` | Issue → worktree → sesión → MR, con varios agentes en paralelo |
+| `docs/03-flujo-de-trabajo.md` | Issue → worktree → sesión → MR; actores, tipos de sesión, estados de los agentes, tracker y coordinación entre sesiones |
 | `docs/04-stack-y-despliegue.md` | Stack Google primero, destinos de deploy (Google o Coolify) y cómo migrar entre ellos |
 | `docs/05-api-gateway.md` | Diseño y seguridad del API gateway (OWASP API Top 10): especificación de la plantilla |
 | `docs/06-documentacion.md` | Diseño del repo de documentación (issues, ADRs, runbooks, MkDocs): especificación de la plantilla |
@@ -38,6 +38,7 @@ Estado y prioridades: [`ROADMAP.md`](ROADMAP.md).
 | `docs/12-pruebas.md` | Pruebas dentro del flujo de desarrollo (controles por etapa, trazabilidad, bugs e inestables) y especificación de `e2e-tests` |
 | `docs/13-elegir-tecnologia.md` | Qué lenguaje de backend y qué herramienta de front o móvil usar según el problema, y el costo de sumar una tecnología |
 | `docs/14-observabilidad.md` | Trazas, métricas, logs correlacionados, SLOs y alertas con OpenTelemetry (Google o Grafana en Coolify) |
+| `docs/15-mcp.md` | MCP: servidores que consumen los agentes (`.mcp.json`, permisos, seguridad) y cómo un proyecto expone el suyo (opción `mcp: true` del gateway) |
 
 ## Requisitos
 
