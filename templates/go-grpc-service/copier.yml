@@ -89,7 +89,7 @@ db_schema:
 go_version:
   type: str
   help: "Versión de Go (go.mod, imagen de build y CI)"
-  default: "1.25.8"
+  default: "1.26.10"
   validator: >-
     {% if not (go_version | regex_search('^1\.[0-9]+\.[0-9]+$')) %}Formato esperado: 1.X.Y{% endif %}
 
