@@ -534,6 +534,11 @@ jobs:
           PY
           done
       - name: bootstrap del workspace (plantilla docs, docs/01)
+        env:
+          GIT_AUTHOR_NAME: ci
+          GIT_AUTHOR_EMAIL: ci@example.com
+          GIT_COMMITTER_NAME: ci
+          GIT_COMMITTER_EMAIL: ci@example.com
         run: |
           r="$RUNNER_TEMP/ws"
           copier copy --defaults --trust -d org_name=demo templates/docs "$r/docs"
