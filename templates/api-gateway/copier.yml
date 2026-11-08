@@ -79,7 +79,7 @@ http_port:
 go_version:
   type: str
   help: "Versión de Go (go.mod, imagen de build y CI). grpc-gateway v2.31 exige >= 1.26"
-  default: "1.26.9"
+  default: "1.26.10"
   validator: >-
     {% if not (go_version | regex_search('^1\.[0-9]+\.[0-9]+$')) %}Formato esperado: 1.X.Y
     {% elif (go_version.split('.')[1] | int) < 26 %}grpc-gateway v2.31 exige Go 1.26 o más nuevo.{% endif %}
