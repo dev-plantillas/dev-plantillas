@@ -2,13 +2,15 @@
 
 Cómo usan los proyectos el **Model Context Protocol** (MCP): qué servidores
 usan los agentes mientras desarrollan y cuándo un proyecto expone su propio
-servidor MCP como parte del producto. **Especificación** (nada construido
-todavía, §10).
+servidor MCP como parte del producto. **Especificación**; la fase 1 (consumir,
+§3–§4) está construida en `templates/_base` y falta publicarla (§12).
 
 ## 1. Estado actual
 
-- Ninguna plantilla ni el plugin `dev-agentes` mencionan MCP.
-- Cada persona configura sus servidores MCP a mano, con alcance de usuario.
+- La base común trae `.mcp.json` (vacío, o con el tracker si `tracker_mcp`) y
+  los permisos de lectura del tracker en `.claude/settings.json`. Falta
+  publicar las plantillas; los repos ya generados lo reciben con `copier update`.
+- Hasta entonces, cada persona configura sus servidores MCP a mano, con alcance de usuario.
   Lo que una sesión puede consultar depende de la máquina, no del proyecto.
 - Los agentes ya trabajan sobre servicios internos (tracker, repo de docs,
   bases de QA) a fuerza de comandos sueltos (`gcloud`, `psql`, `glab`): sin
@@ -46,8 +48,10 @@ permisos) y servidores de terceros sin revisar el código.
 
 La base común (`templates/_base`) agrega:
 
-**`.mcp.json`** (versionado): los servidores de proyecto. Los secretos nunca van
-escritos: se expanden de variables de entorno.
+**`.mcp.json`** (versionado): los servidores de proyecto. Sale de
+`_base/mcp.json.jinja`: vacío por defecto y con el servidor `tracker` si se
+responde `tracker_mcp: true` en Copier. Los secretos nunca van escritos: se
+expanden de variables de entorno.
 
 ```json
 {
@@ -61,22 +65,28 @@ escritos: se expanden de variables de entorno.
 }
 ```
 
-**Permisos** en `.claude/settings.json` (lo que hoy es
+**Permisos** en `.claude/settings.json` (vienen de
 `_base/claude-settings.json`): las herramientas de lectura van en `allow`; las
 que escriben piden confirmación; las destructivas van en `deny` salvo que el
-repo las necesite.
+repo las necesite. La base trae las del protocolo del tracker (`docs/03` §6):
 
 ```json
 {
   "permissions": {
-    "allow": ["mcp__tracker__list_issues", "mcp__tracker__get_issue", "mcp__tracker__report_status"],
-    "deny":  ["mcp__tracker__delete_project"]
+    "allow": [
+      "mcp__tracker__list_issues", "mcp__tracker__get_issue",
+      "mcp__tracker__next_issue", "mcp__tracker__report_status"
+    ]
   }
 }
 ```
 
-**`.env.example`** lista las variables (`TRACKER_MCP_URL`, `TRACKER_TOKEN`) sin
-valores. gitleaks ya bloquea un `.env` commiteado.
+**Variables de entorno de la persona**, no del repo: Claude Code expande los
+`${VAR}` de `.mcp.json` desde el entorno de su propio proceso y no lee los
+`.env` del repo (esos son de la app). Cada persona define `TRACKER_MCP_URL` y
+`TRACKER_TOKEN` en su entorno de usuario (en Windows, variables de entorno de
+usuario). El `CLAUDE.md` que trae la base lo recuerda. Un token nunca va en un
+archivo del repo; gitleaks lo busca igual.
 
 Otras herramientas (Codex, agentes en la nube) tienen su propio formato de
 configuración MCP. El servidor y las reglas son los mismos; el archivo cambia.
@@ -139,14 +149,14 @@ web    ──REST─────▶ api-gateway /v1  ──gRPC──▶ <domini
 
 | Plantilla | Agrega |
 |---|---|
-| `_base` (todas) | `.mcp.json` vacío o con el tracker, permisos MCP en `.claude/settings.json`, variables en `.env.example` |
+| `_base` (todas) | `.mcp.json` vacío o con el tracker (pregunta `tracker_mcp`), permisos MCP en `.claude/settings.json`, `CLAUDE.md` con `@AGENTS.md` ✅ |
 | `api-gateway` | Opción `mcp: true`: endpoint `/mcp` con el SDK oficial de Go, herramientas generadas a partir de una lista de RPCs expuestos, tokens por actor |
 | `docs` | Plantilla de ADR "sumar un servidor MCP" |
 | Plugin `dev-agentes` | Usa el MCP del tracker en sus hooks y skills (`docs/03` §7) |
 
 ## 10. Criterios de terminado
 
-- [ ] Un repo generado trae `.mcp.json` y permisos MCP, y `sincronizar-base.py --comprobar` lo verifica
+- [x] Un repo generado trae `.mcp.json` y permisos MCP, y `sincronizar-base.py --comprobar` lo verifica
 - [ ] Ningún secreto en `.mcp.json` (lo prueba gitleaks en el CI de la plantilla)
 - [ ] `api-gateway` con `mcp: true` genera un proyecto que pasa sus tests e2e: listar, leer y escribir con un token, y fallar sin token o con alcance insuficiente
 - [ ] Las herramientas de escritura quedan auditadas con actor y agente

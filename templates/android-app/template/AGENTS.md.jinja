@@ -1,9 +1,9 @@
-# {{ app_name }} — contexto para Claude
+# {{ app_name }} — contexto para agentes
 
 App Android nativa (`{{ application_id }}`): Kotlin + Jetpack Compose + Material 3,
 Hilt, Room, corrutinas/Flow. Backend: {% if rest %}REST contra el api-gateway (Ktor){% else %}gRPC con los stubs de `{{ protos_maven }}`{% endif %}.
 {%- if fb %} Firebase: Auth, App Check, FCM, Crashlytics.{% endif %}
-Las reglas comunes de la plataforma están en los `CLAUDE.md` de las carpetas padre.
+Las reglas comunes de la plataforma están en los `AGENTS.md` de las carpetas padre.
 
 ## Módulos
 

@@ -71,6 +71,9 @@ Code (`docs/03` §8). La tabla vale para los dos archivos:
 
 Los `AGENTS.md` / `CLAUDE.md` de nivel `<org>`, `backend` y `frontend` no están en ningún repo.
 Se versionan en `plantillas\workspace\` y se copian con `scripts\bootstrap`.
+En un workspace armado antes de `AGENTS.md`, `bootstrap` no pisa los
+`CLAUDE.md` existentes: renombrarlos a `AGENTS.md` a mano y crear cada
+`CLAUDE.md` con la línea `@AGENTS.md`.
 
 Lo que **no** va en un `AGENTS.md` ni en un `CLAUDE.md`: historial de incidentes, decisiones con su
 contexto (→ ADR en `docs\`), changelogs, notas de un issue (→ el issue).

@@ -516,6 +516,23 @@ jobs:
         with: { python-version: "3.12" }
       - name: Plantillas sincronizadas con templates/_base
         run: python scripts/sincronizar-base.py --comprobar
+      - name: AGENTS.md, CLAUDE.md y .mcp.json en un repo generado (docs/03 §8, docs/15 §4)
+        run: |
+          pip install copier
+          for mcp in false true; do
+            d="$RUNNER_TEMP/base-$mcp"
+            copier copy --defaults --trust -d org_name=demo -d tracker_mcp=$mcp templates/protos "$d"
+            test -s "$d/AGENTS.md"
+            test "$(head -1 "$d/CLAUDE.md")" = "@AGENTS.md"
+            python - "$d" "$mcp" <<'PY'
+          import json, sys
+          d, mcp = sys.argv[1], sys.argv[2] == "true"
+          servidores = json.load(open(f"{d}/.mcp.json"))["mcpServers"]
+          assert list(servidores) == (["tracker"] if mcp else []), servidores
+          allow = json.load(open(f"{d}/.claude/settings.json"))["permissions"]["allow"]
+          assert "mcp__tracker__get_issue" in allow, allow
+          PY
+          done
       - name: Chequeo del título del MR/PR
         run: |
           v=templates/_base/scripts/verificar-titulo.sh

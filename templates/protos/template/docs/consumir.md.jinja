@@ -34,7 +34,7 @@ token de solo lectura a este repo{% endif %}.
 
 Servicio generado con la plantilla `go-grpc-service`: responder
 `protos_module={{ module_path }}` y seguir la sección "Protos" de su
-`CLAUDE.md`. Como el ejemplo es el mismo `ItemService`, alcanza con cambiar el
+`AGENTS.md`. Como el ejemplo es el mismo `ItemService`, alcanza con cambiar el
 import `<servicio>/gen/go/example/v1` por
 `{{ module_path }}/gen/go/{{ first_package }}/v1` y borrar `proto/`, `gen/`,
 `buf.yaml` y `buf.gen.yaml` del servicio. No pueden convivir los dos:
@@ -52,7 +52,7 @@ rutas en `gen/openapi/api.swagger.json` (paquete Go
 
 Gateway generado con la plantilla `api-gateway`: responder
 `protos_module={{ module_path }}` y seguir "Pasar al repo de protos" de su
-`CLAUDE.md` (cambiar los imports de `gen/go/example/v1` y `gen/openapi`). Cada
+`AGENTS.md` (cambiar los imports de `gen/go/example/v1` y `gen/openapi`). Cada
 RPC nuevo se expone recién al agregarlo a su `routes.yaml`.
 
 Clientes web/móviles tipados: generarlos desde el OpenAPI (p. ej.

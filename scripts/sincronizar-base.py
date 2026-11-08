@@ -16,6 +16,7 @@ en su template/, cada plantilla usa sus propios flags: ci_gh, ci_github…):
 
   Copia tal cual         SECURITY.md.jinja, CODEOWNERS.jinja, .gitleaks.toml,
                          .pre-commit-config.yaml, scripts/verificar-titulo.sh,
+                         CLAUDE.md (importa AGENTS.md), .mcp.json.jinja,
                          <.github>/workflows/base.yml, <.gitlab>/base.gitlab-ci.yml
   Arma                   plantilla de PR/MR = _base/pr.md.jinja + la sección
                          propia de la plantilla (templates/<x>/pr-propio.md)
@@ -23,6 +24,8 @@ en su template/, cada plantilla usa sus propios flags: ci_gh, ci_github…):
   (# >>> base común …    (include: del archivo de la base) y copier.yml
    # <<< base común)     (preguntas dueño y docs_repo). Lo de afuera no se toca.
   Agrega si faltan       permisos de .claude/settings.json (allow/deny)
+  Exige                  template/AGENTS.md(.jinja) propio de la plantilla, y
+                         que no quede un CLAUDE.md.jinja (lo reemplaza el de la base)
 """
 
 from __future__ import annotations
@@ -71,6 +74,8 @@ COPIAS = {
     ".gitleaks.toml": ".gitleaks.toml",
     ".pre-commit-config.yaml": ".pre-commit-config.yaml",
     "scripts/verificar-titulo.sh": "scripts/verificar-titulo.sh",
+    "CLAUDE.md": "CLAUDE.md",
+    ".mcp.json.jinja": "mcp.json.jinja",
 }
 
 
@@ -143,6 +148,16 @@ def esperado(p: Plantilla) -> tuple[dict[Path, str], list[Path]]:
     """Contenido esperado de cada archivo administrado y archivos a borrar."""
     archivos: dict[Path, str] = {}
     borrar: list[Path] = []
+
+    # Contexto para agentes (docs/03 §8): AGENTS.md es de la plantilla y es la
+    # fuente; CLAUDE.md lo trae la base y sólo lo importa.
+    if not any((p.tpl / n).exists() for n in ("AGENTS.md", "AGENTS.md.jinja")):
+        raise SystemExit(f"{p.nombre}: falta template/AGENTS.md(.jinja) (contexto del repo para agentes)")
+    if (p.tpl / "CLAUDE.md.jinja").exists():
+        raise SystemExit(
+            f"{p.nombre}: template/CLAUDE.md.jinja tiene que pasar a AGENTS.md.jinja "
+            "(CLAUDE.md lo genera la base con @AGENTS.md)"
+        )
 
     for destino, origen in COPIAS.items():
         texto = leer(BASE / origen)

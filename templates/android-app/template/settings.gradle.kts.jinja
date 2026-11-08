@@ -66,7 +66,7 @@ rootProject.name = "{{ slug }}"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 // Módulos Kotlin puro (sin Android): candidatos al módulo compartido de KMP.
-// Si alguien los convierte en módulos Android, el build falla acá (CLAUDE.md).
+// Si alguien los convierte en módulos Android, el build falla acá (AGENTS.md).
 // (La lista va dentro del lambda: con configuration cache no puede capturar el script.)
 gradle.lifecycle.afterProject {
     if (path in setOf(":core:model", ":core:domain")) {

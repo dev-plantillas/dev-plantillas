@@ -6,7 +6,7 @@
 //
 // Cuando el servicio tenga su contrato real (en el repo de protos de la
 // organización), borrá este archivo junto con gen/go/example/ y la entidad Item
-// (ver CLAUDE.md, sección "Borrar el ejemplo").
+// (ver AGENTS.md, sección "Borrar el ejemplo").
 //
 // Para regenerar el código Go después de editarlo: `make proto` (usa buf).
 
