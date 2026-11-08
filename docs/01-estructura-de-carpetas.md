@@ -54,10 +54,13 @@ C:\dev\<org>\
 5. **Nada de archivos sueltos en la raíz** (PDFs, Excel, prompts). Van a `docs\`
    o a `tools\` según corresponda.
 
-## Contexto para agentes (`CLAUDE.md` en capas)
+## Contexto para agentes (`AGENTS.md` y `CLAUDE.md` en capas)
 
 Claude Code lee el `CLAUDE.md` del directorio donde arranca **y el de cada carpeta
-padre**. Se aprovecha para no repetir reglas:
+padre**; Codex y otras herramientas hacen lo mismo con `AGENTS.md`. Se aprovecha
+para no repetir reglas. En cada nivel, **`AGENTS.md` es la fuente** y `CLAUDE.md`
+lo importa (`@AGENTS.md` en la primera línea) y agrega sólo lo propio de Claude
+Code (`docs/03` §8). La tabla vale para los dos archivos:
 
 | Nivel | Contiene | Tamaño guía |
 |---|---|---|
@@ -66,10 +69,10 @@ padre**. Se aprovecha para no repetir reglas:
 | `frontend\CLAUDE.md` | Stack, estructura de `src/app`, estilos, cómo pedir endpoints | ≤ 150 líneas |
 | `<repo>\CLAUDE.md` | Sólo lo propio del repo: puerto, schema, dependencias, particularidades | ≤ 200 líneas |
 
-Los `CLAUDE.md` de nivel `<org>`, `backend` y `frontend` no están en ningún repo.
+Los `AGENTS.md` / `CLAUDE.md` de nivel `<org>`, `backend` y `frontend` no están en ningún repo.
 Se versionan en `plantillas\workspace\` y se copian con `scripts\bootstrap`.
 
-Lo que **no** va en un `CLAUDE.md`: historial de incidentes, decisiones con su
+Lo que **no** va en un `AGENTS.md` ni en un `CLAUDE.md`: historial de incidentes, decisiones con su
 contexto (→ ADR en `docs\`), changelogs, notas de un issue (→ el issue).
 
 ## Arranque de una máquina nueva
