@@ -3,7 +3,7 @@
 Especificación de la herramienta de línea de comandos que une todo
 `dev-plantillas`: catálogo de plantillas, creación y actualización de
 proyectos, workspace del equipo e issues. Reemplaza los scripts sueltos
-(`bootstrap.ps1`, `new-worktree.ps1`, `publish-template.sh`) y los comandos
+(`bootstrap` del repo de docs, `new-worktree.ps1`, `publish-template.sh`) y los comandos
 largos de Copier, `gh` y `git` que hoy se escriben a mano.
 
 Se construye **en modo pair**: el núcleo lo escribe el autor del repo, con guía
@@ -18,7 +18,7 @@ y revisión (ver §9).
 | `git init`, `git add --chmod=+x scripts/*.sh`, primer commit, `gh repo create` | Lo hace `dp new` |
 | Saber qué repos están atrasados respecto de su plantilla | `dp status` |
 | `copier update` repo por repo | `dp update --all` |
-| `bootstrap.ps1` y `new-worktree.ps1` (sólo Windows) | `dp workspace init` y `dp issue start 42` (cualquier sistema) |
+| `docs/workspace/bootstrap` y `new-worktree.ps1` (este, sólo Windows) | `dp workspace init` y `dp issue start 42` (cualquier sistema) |
 | Leer el issue para saber qué repos crear | `dp issue start` lee el frontmatter del issue |
 | `publish-template.sh` | `dp plantilla publicar` |
 
@@ -64,8 +64,8 @@ plantillas:
 
 ## 4. Workspace
 
-`dp workspace init` crea en la raíz (`C:\dev\<org>` o `~/dev/<org>`) el
-archivo `.dp/workspace.toml`, que reemplaza a `repos.txt`:
+`dp workspace init` crea en la raíz (`docs/01`) el
+archivo `.dp/workspace.toml`, que reemplaza a `docs/workspace/repos.txt`:
 
 ```toml
 org = "mi-org"
@@ -218,5 +218,5 @@ para el uso diario (`list` + `new`).
 - [ ] `dp plantilla probar` reemplaza los pasos repetidos del CI de
       `dev-plantillas`.
 - [ ] Tests en verde en Windows y Ubuntu; cobertura de la lógica ≥ 80 %.
-- [ ] `bootstrap.ps1`, `new-worktree.ps1` y `publish-template.sh` eliminados;
+- [ ] `docs/workspace/bootstrap`, `new-worktree.ps1` y `publish-template.sh` eliminados;
       la documentación (`README`, `docs/01–03`) usa `dp`.

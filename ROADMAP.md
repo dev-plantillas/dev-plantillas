@@ -32,7 +32,8 @@ Leyenda: ✅ publicada · 🔨 en construcción · 📐 especificada · 💭 ide
 | Plugin `dev-agentes`: `/verificar`, hooks `guard-worktree` y `format` | ✅ | `plugins/dev-agentes` |
 | Plugin `dev-agentes` v2: hooks de estado del agente, `/issue-start`, `/cerrar-issue`, `/coordinar` | 📐 | `docs/03` |
 | Gestión de agentes: actores, estados, protocolo con el tracker | 📐 | `docs/03` |
-| `AGENTS.md` como fuente (`workspace/` y plantillas) y `CLAUDE.md` con `@AGENTS.md` desde `_base` | 🔨 | `docs/03` §8 |
+| `AGENTS.md` como fuente (plantillas y `docs/workspace/`) y `CLAUDE.md` con `@AGENTS.md` desde `_base` | 🔨 | `docs/03` §8 |
+| Capas de plataforma y `bootstrap` (`.ps1` y `.sh`) en la plantilla `docs`, rutas relativas a la raíz | 🔨 | `docs/01` |
 | MCP: servidores aprobados, `.mcp.json` y permisos en `_base` | 🔨 | `docs/15` §4 |
 | Destinos de deploy Google / Coolify y migración entre ellos | ✅ | `docs/04` |
 | Base común de repos, fase 1 (`templates/_base`: gitleaks, `.gitignore` de secretos, `SECURITY.md`, `CODEOWNERS`, plantilla de MR/PR, título del MR/PR) | ✅ | `docs/10` §11 |

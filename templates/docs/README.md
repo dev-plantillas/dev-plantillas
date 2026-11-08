@@ -22,6 +22,7 @@ docs/
 ├── esquemas/*.schema.json         # issue, plan, adr, servicio, runbook, postmortem, release
 ├── scripts/                       # nuevo.py, validar.py, generar.py, hook_mkdocs.py, comun.py
 ├── _plantillas/                   # issue, plan, adr, runbook, postmortem, release, servicio
+├── workspace/                     # capas de plataforma (AGENTS.md raíz, backend/, frontend/), repos.txt, bootstrap.ps1/.sh
 ├── contenido/
 │   ├── index.md, estilos/extra.css
 │   ├── plataforma/                # índice, arquitectura (Mermaid), ambientes, glosario, cómo documentar
