@@ -51,6 +51,26 @@ del sistema operativo. Los scripts de `bootstrap` se niegan a correr ahí.
         └── api-gateway/
 ```
 
+### Proyecto de un solo repo
+
+Un proyecto que es un único repo (sin `docs/`, `backend/` ni `frontend/`
+propios) no arma workspace: la copia principal vive en `<raíz>/<repo>` y se
+queda en `main`, y los worktrees van en una **carpeta hermana con sufijo
+`-wt`**, uno por issue:
+
+```text
+C:/dev/
+├── <repo>/                ← copia principal, en main y limpia
+└── <repo>-wt/
+    ├── issue-7/           ← worktree del issue 7 (rama feat/issue-7-<slug>)
+    └── issue-12/
+```
+
+La carpeta hermana, y no `<repo>/worktrees/`, para que los worktrees no queden
+dentro del árbol del repo (git, los formateadores y los buscadores los verían
+como archivos propios). Las reglas de abajo valen igual. `nueva-sesion.ps1`
+(`docs/03` §13) detecta solo cuál de los dos layouts tiene el proyecto.
+
 ### Reglas
 
 1. **El nombre de la carpeta es el nombre del repo.** No hay alias: si el repo es

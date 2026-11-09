@@ -19,7 +19,7 @@ Estado y prioridades: [`ROADMAP.md`](ROADMAP.md).
 | `templates/docs/` | Plantilla Copier: repo central de documentación (issues por carpeta, ADRs, runbooks, releases) con frontmatter validado, índices generados y MkDocs Material |
 | `plugins/dev-agentes/` | Plugin de Claude Code: skills, agentes y hooks del flujo de trabajo |
 | `.claude-plugin/` | Marketplace: permite instalar el plugin con `/plugin marketplace add dev-plantillas/dev-plantillas` |
-| `scripts/new-worktree.ps1` | Crea los worktrees de un issue |
+| `scripts/new-worktree.ps1` | Crea los worktrees de un issue (workspace o repo único); con `-Herdr` abre la sesión en herdr (`docs/03` §13) |
 | `scripts/sincronizar-base.py` | Copia `templates/_base` a cada plantilla; `--comprobar` falla si alguna quedó desactualizada (lo corre el CI) |
 | `scripts/publish-template.sh` | Publica una plantilla en su propio repo con tag |
 | `docs/01-estructura-de-carpetas.md` | Layout local del equipo |

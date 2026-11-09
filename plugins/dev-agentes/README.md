@@ -19,6 +19,9 @@ Para probar cambios locales sin instalar: `claude --plugin-dir ./plugins/dev-age
 | Skill | `/verificar` | Build, tests, lint y formato de cada proyecto tocado (Go, Node/Angular, Python); deja la evidencia en el issue |
 | Hook | `guard-worktree` | Si la sesión trabaja en `worktrees/issue-<n>/`, bloquea ediciones a otros archivos del workspace (copias principales, otros issues). Permite la carpeta de su issue en el repo de documentación (`docs/contenido/issues/<n>-*/`, con o sin ceros a la izquierda; ver `docs/06-documentacion.md`), el formato anterior `docs/issues/<n>-*.md` y todo lo que esté fuera del workspace. Nunca otros issues ni `_generado/` |
 | Hook | `format` | Después de cada edición: `gofmt`, `prettier` del proyecto o `ruff format`. Nunca bloquea |
+| Skill | `/nueva-sesion` | Abre una sesión de issue en herdr: worktrees (workspace de varios repos o repo único con `<repo>-wt/`), workspace `<proyecto> #<n>`, `claude -n issue-<n>` y primer mensaje. La cierra con `cerrar-sesion.ps1` sólo si terminó y no deja nada sin guardar. `docs/03` §13 |
+| Skill | `/esperando` | Marca en la barra lateral de herdr por qué la sesión queda quieta (`🙋 te pregunta`, `⏳ espera a <sesión>`) |
+| Hook | `herdr` | Dentro de herdr: etiquetas de estado en español al abrir y limpieza de la marca de espera en cada turno |
 | Hooks | `estado` | Reportan al tracker el estado de la sesión (`docs/03` §4 y §7) con `report_status` de su servidor MCP: `en-reposo` al abrir, `trabajando` en cada turno (y un latido por minuto mientras trabaja), `esperando-ok` cuando pide permiso o pregunta, `en-reposo` con el resumen del turno al terminarlo y `terminada` al cerrar, con las ramas sin push y los cambios sin commit que quedaron. Sólo si hay tracker configurado |
 
 ### Estado en el tracker
@@ -46,6 +49,12 @@ workspace (la que tiene `docs/workspace/`).
 | `DEV_AGENTES_ALLOW_OUTSIDE=1` | Desactiva `guard-worktree` (editar fuera del issue a conciencia) |
 | `DEV_AGENTES_NO_FORMAT=1` | Desactiva `format` |
 | `DEV_AGENTES_NO_ESTADO=1` | Desactiva los hooks de estado |
+| `DEV_AGENTES_NO_HERDR=1` | Desactiva el hook de herdr |
+
+Los scripts de `/nueva-sesion` también se usan solos (PowerShell 7, Windows,
+macOS o Linux): `skills/nueva-sesion/scripts/nueva-sesion.ps1` (sin `-Herdr`
+sólo crea los worktrees; `scripts/new-worktree.ps1` del repo lo llama),
+`nueva-sesion-menu.ps1` (popup para un atajo de herdr) y `cerrar-sesion.ps1`.
 
 Próximas piezas (ver `docs/03-flujo-de-trabajo.md`): revisores por stack (`go-reviewer`, `angular-reviewer`,
 `migration-reviewer`), `/issue-start`, `/cerrar-issue`, `/nuevo-proyecto`.

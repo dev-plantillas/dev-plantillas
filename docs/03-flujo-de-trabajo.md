@@ -26,7 +26,8 @@ issue  →  worktrees  →  sesión  →  verificar  →  MR  →  cerrar
        -b feat/issue-42-descuentos origin/main
    ```
    `scripts/new-worktree.ps1` de dev-plantillas hace lo mismo para varios repos
-   (y `dp issue start 42` lo reemplaza, `docs/08`).
+   o para un repo único (`docs/01`); con `-Herdr` abre además la sesión (§13).
+   `dp issue start 42` lo reemplaza (`docs/08`).
 3. **Una sesión de agente** abierta en `worktrees/issue-42/`, con nombre
    `issue-42`. La sesión ve todos los repos del issue y lee los `AGENTS.md` /
    `CLAUDE.md` de la plataforma por herencia de carpetas (§8).
@@ -196,6 +197,9 @@ que el agente decide usar.
 | Skill | `/issue-start <n>` | Worktrees + `claim` del issue + nombre de sesión |
 | Skill | `/cerrar-issue` | Evidencia en el issue, `release`, borrar worktrees |
 | Skill | `/coordinar` | Pregunta a todas las sesiones activas su estado y junta las respuestas (§9) |
+| Hook | `SessionStart`, `UserPromptSubmit` (`herdr.sh`) | Dentro de herdr: etiquetas de estado en español y limpieza de la marca de espera (§13) ✅ |
+| Skill | `/nueva-sesion` | Abre una sesión de issue en herdr (worktrees, workspace, nombre, primer mensaje) y la cierra cuando terminó (§13) ✅ |
+| Skill | `/esperando` | Marca en herdr por qué la sesión queda quieta (§13) ✅ |
 
 Los hooks no bloquean nunca: si el tracker no responde, se anota y se sigue.
 Sin tracker configurado, no hacen nada. Los hooks de estado (✅ en
@@ -277,3 +281,63 @@ mensajes entre sesiones (`/coordinar`).
 3. **Trabajo asignado:** `claim`/`release`, `/issue-start`, `/cerrar-issue`, `next_issue`.
 4. **Automatización:** estados por MR/PR, avisos de `colgado` y `bloqueado`, reporte diario.
 5. **Coordinación:** `/coordinar` sobre el tracker; agentes en la nube y Codex reportando por MCP.
+
+## 13. Sesiones en herdr
+
+herdr es un multiplexor de terminal para agentes: muestra
+cada sesión en una barra lateral con su estado. Es opcional y local (lo ve sólo
+quien lo usa); el tracker (§6) es lo que ve el equipo. Las dos cosas conviven:
+los hooks de estado de `dev-agentes` reportan al tracker y el hook `herdr.sh`
+marca la barra lateral.
+
+**Un workspace de herdr por issue.**
+
+| Qué | Nombre | Ejemplo |
+|---|---|---|
+| Workspace de herdr | `<proyecto> #<n>`, con la carpeta del issue como cwd | `mi-org #42` |
+| Sesión de Claude Code | `issue-<n>` (`claude -n issue-<n>`, §3) | `issue-42` |
+| Agente de herdr | `<proyecto>-issue-<n>` (máx. 32 caracteres) | `mi-org-issue-42` |
+
+**Abrir.** La persona, o una sesión coordinadora con el skill `nueva-sesion`
+de `dev-agentes`, que corre `nueva-sesion.ps1 -Herdr`: crea los worktrees con
+cualquiera de los dos layouts (`docs/01`), abre el workspace, arranca la
+sesión con nombre y le manda el primer mensaje (qué issue, qué queda fuera de
+alcance, qué no puede hacer sin la persona). `scripts/new-worktree.ps1` es el
+mismo script: sin `-Herdr` sólo crea los worktrees. Para un atajo de teclado,
+`nueva-sesion-menu.ps1` pregunta los datos en un popup.
+
+- Si Claude pregunta si confía en la carpeta nueva, la acepta **la persona**;
+  el script avisa y espera.
+- Una sesión coordinadora no abre más de **3 sesiones** a la vez sin que la
+  persona lo pida.
+
+**Cerrar.** Quien abre una sesión la cierra, con `cerrar-sesion.ps1` (nunca
+`herdr workspace close` directo). Sin `-Confirmar` sólo revisa; con
+`-Confirmar` manda `/exit` (la sesión queda para `claude --resume`) y cierra
+el workspace, y sólo si:
+
+1. el workspace es de issue (`<proyecto> #<n>`) y no es el de quien llama;
+2. Claude está `idle` o `done`, sin marca de espera;
+3. ningún worktree tiene cambios sin commit ni commits sin push (§5);
+4. ningún proceso de la sesión escucha un puerto (lo que la sesión levanta, la
+   sesión lo baja, §5).
+
+Las sesiones principales (las que no son `<proyecto> #<n>`) las cierra la
+persona. Los worktrees se borran aparte, cuando el MR/PR está mergeado (§1).
+
+**Marcas de espera.** herdr detecta solo los pedidos de permiso y las
+preguntas con opciones (`⚠ TU DECISIÓN`). Cuando una sesión termina el turno en
+texto y queda esperando, se marca con el skill `esperando` antes de cortar:
+
+| Marca | Cuándo | `espera_tipo` |
+|---|---|---|
+| `🙋 te pregunta` | Terminó con una pregunta o una decisión para la persona | `persona` |
+| `⏳ espera a <sesión>` | Espera a otra sesión | `sesion` |
+| `⏳ espera a <qué>` | Espera un CI, un merge, un deploy | `otro` |
+
+La marca se limpia sola cuando la sesión vuelve a recibir trabajo (hook
+`herdr.sh` en `UserPromptSubmit`). Los tokens de la fuente `dev-espera`
+(`espera`, `espera_tipo`, `espera_a`) son un contrato estable para quien los
+lea; el texto de `espera` puede cambiar. La regla para las sesiones ("marcate
+antes de quedarte esperando") va en el `CLAUDE.md` de plataforma
+(`docs/workspace/CLAUDE.md`).

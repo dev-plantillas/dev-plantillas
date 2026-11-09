@@ -152,6 +152,16 @@ jobs:
           claude plugin validate --strict plugins/dev-agentes
       - name: Sintaxis de scripts
         run: find plugins scripts -name '*.sh' -print0 | xargs -0 -n1 bash -n
+      - name: Sintaxis de scripts PowerShell
+        shell: pwsh
+        run: |
+          $mal = 0
+          Get-ChildItem plugins, scripts -Recurse -Filter *.ps1 | ForEach-Object {
+            $e = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$null, [ref]$e)
+            if ($e) { $e | ForEach-Object { Write-Host "::error file=$($_.Extent.File),line=$($_.Extent.StartLineNumber)::$($_.Message)" }; $mal++ }
+          }
+          exit $mal
       - uses: actions/setup-go@v5
         with: { go-version: stable }
       - name: Tests de hooks
