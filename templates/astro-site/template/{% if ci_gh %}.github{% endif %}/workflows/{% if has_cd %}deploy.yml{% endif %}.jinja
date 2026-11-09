@@ -169,7 +169,7 @@ jobs:
           for v in COOLIFY_URL COOLIFY_RESOURCE_UUID COOLIFY_TOKEN; do
             test -n "${!v}" || { echo "Falta $v en el GitHub Environment de este ambiente"; exit 1; }
           done
-          curl -fsS "$COOLIFY_URL/api/v1/deploy?uuid=$COOLIFY_RESOURCE_UUID&force=false" \
+          curl -fsS -X POST "$COOLIFY_URL/api/v1/deploy?uuid=$COOLIFY_RESOURCE_UUID&force=false" \
             -H "Authorization: Bearer $COOLIFY_TOKEN"
 {%- endraw %}
 {%- else -%}

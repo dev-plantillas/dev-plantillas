@@ -14,8 +14,10 @@
 #   servicio en el panel y Traefik termina TLS. Por eso TRUSTED_PROXY_HOPS=1.
 # - Los servicios gRPC NO publican puertos: el gateway los alcanza por la red
 #   de Docker. Para que se vean entre recursos, activá "Connect to Predefined
-#   Network" en este recurso y en cada servicio, y usá como UPSTREAM_*_ADDR el
-#   nombre de contenedor del servicio (docs/deploy.md).
+#   Network" en este recurso y en cada servicio, dale a cada servicio un
+#   "Consistent name" propio y usá como UPSTREAM_*_ADDR <servicio>-<nombre>
+#   (p. ej. app-items-qa:5000). El nombre generado <servicio>-<uuid> no
+#   resuelve en la red (docs/deploy.md).
 # - ${VAR:?} = obligatoria: el deploy falla si falta en el panel.
 # =============================================================================
 

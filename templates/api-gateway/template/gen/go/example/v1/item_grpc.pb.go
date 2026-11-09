@@ -8,7 +8,7 @@
 // Con un repo de protos real (plantilla `protos` con http_gateway=true), las
 // anotaciones y el código del gateway (*.pb.gw.go) viven allá: borrá este
 // archivo junto con gen/, buf.* y cambiá el import en app/upstream/registry.go
-// (ver CLAUDE.md, "Pasar al repo de protos").
+// (ver AGENTS.md, "Pasar al repo de protos").
 //
 // Para regenerar el código después de editarlo: `make proto` (usa buf).
 

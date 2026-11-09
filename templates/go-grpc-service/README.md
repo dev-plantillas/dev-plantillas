@@ -48,7 +48,7 @@ Los archivos que terminan en `.jinja` se renderizan; el resto se copia tal cual.
 ├── docs/deploy.md                      # recurso, variables, dominio/gRPC, backups a S3 + restore
 ├── docs/migrar-a-cloud-run.md          # paso a paso coolify -> cloud-run
 ├── Makefile, buf.yaml, buf.gen.yaml, go.mod, go.sum
-├── CLAUDE.md, .claude/settings.json
+├── AGENTS.md, CLAUDE.md, .claude/settings.json, .mcp.json
 └── .copier-answers.yml                 # respuestas (lo usa `copier update`)
 ```
 
@@ -100,14 +100,14 @@ cp .env.example .env.dev && make up      # postgres:16 + servicio en Docker, esp
 | Pregunta | Default | Uso |
 |---|---|---|
 | `service_name` | — | Nombre corto sin `-service` (`agenda` → `agenda-service`). Minúsculas/dígitos/guiones, máx. 19 (límite de 30 del service account `<nombre>-service-sa`) |
-| `service_description` | `TODO…` | Primera sección de `CLAUDE.md` |
+| `service_description` | `TODO…` | Primera sección de `AGENTS.md` |
 | `ci_provider` | `gitlab` | `gitlab` → `.gitlab-ci.yml`; `github` → `.github/workflows/ci.yml` + `deploy.yml` |
 | `dueño` | `@<org del module_path>/backend` | `CODEOWNERS` y `SECURITY.md` (`@usuario` o `@org/equipo`; base común, `docs/10` de dev-plantillas) |
 | `docs_repo` | vacío | URL del repo de docs: la plantilla de MR/PR enlaza la carpeta del issue ahí |
 | `module_path` | `<gitlab.com\|github.com>/mi-org/<service>-service` | `module` de `go.mod` e imports |
 | `grpc_port` | `5000` | `GRPC_PORT`, Dockerfile, compose, probes de Cloud Run |
 | `db_schema` | `service_name` con `_` | Schema Postgres, `TableName()`, migraciones, usuario `<schema>_user` |
-| `go_version` | `1.25.8` | `go.mod`, imagen `golang:<v>` del Dockerfile y de CI |
+| `go_version` | `1.26.10` | `go.mod`, imagen `golang:<v>` del Dockerfile y de CI |
 | `protos_module` | vacío | Módulo Go del repo de protos compartido (ver "Protos") |
 | `protos_version` | `latest` | Solo si hay `protos_module`; aparece en la doc/`go get` |
 | `deploy_target` | `cloud-run` | `cloud-run`, `coolify` o `ninguno` (ver "Destinos de deploy") |
@@ -141,7 +141,7 @@ Configuración 12-factor: el código lee **todo** de variables de entorno
 | | `cloud-run` | `coolify` | `ninguno` |
 |---|---|---|---|
 | CI en MR/PR | tests | tests | tests |
-| Tag `qa-v*` / `prod-v*` | Cloud Build → Artifact Registry → `gcloud run services replace` | `docker build` → GHCR / GitLab Registry (tag inmutable + `qa`/`prod`) → `curl $COOLIFY_URL/api/v1/deploy?uuid=...` | — |
+| Tag `qa-v*` / `prod-v*` | Cloud Build → Artifact Registry → `gcloud run services replace` | `docker build` → GHCR / GitLab Registry (tag inmutable + `qa`/`prod`) → `curl -X POST $COOLIFY_URL/api/v1/deploy?uuid=...` | — |
 | Guarda de prod si el release toca `migrations/` | sí | sí | — |
 | Health | probes gRPC de Cloud Run | `healthcheck` del compose (`<binario> healthcheck`) | — |
 | Postgres | Cloud SQL | `postgres:16` en el compose, volumen persistente, backups a S3 (doc) | — |
@@ -172,7 +172,7 @@ En un proyecto sin modificaciones locales no hay conflictos: aparecen los
 archivos de Cloud Run (`cloudbuild.yaml`, `cloudrun.*.yaml`, `.gcloudignore`,
 `scripts/rollback.sh`, `scripts/setup_cloud_run_secrets.sh`,
 `docs/ci-cd-setup.md`), desaparecen `docker-compose.coolify.yml`,
-`docs/deploy.md` y `docs/migrar-a-cloud-run.md`, y cambian la CI, `CLAUDE.md`,
+`docs/deploy.md` y `docs/migrar-a-cloud-run.md`, y cambian la CI, `AGENTS.md`,
 `.env.example` y comentarios de `docker-compose.yml`. El código Go no cambia y
 el resultado es idéntico a generar el proyecto directamente con `cloud-run`.
 Ojo: Copier borra los archivos que dejan de generarse **aunque tengan cambios
@@ -204,12 +204,12 @@ adivinar los paquetes de un repo de protos externo. Por eso:
   borraría mientras nadie lo importe, y el scaffold no compilaría sin acceso al
   repo privado).
 
-Para enchufar el repo de protos (ver también `CLAUDE.md` → "Protos"):
+Para enchufar el repo de protos (ver también `AGENTS.md` → "Protos"):
 
 1. `go get <protos_module>@<versión>`
 2. Handler que implemente el `XxxServiceServer` real (embebiendo
    `UnimplementedXxxServiceServer`), mapper, y registro en `cli/main.go`.
-3. Borrar el ejemplo: entidad `Item` (archivos listados en `CLAUDE.md`),
+3. Borrar el ejemplo: entidad `Item` (archivos listados en `AGENTS.md`),
    `proto/`, `gen/`, `buf.yaml`, `buf.gen.yaml`, tabla `items` de la migración.
 4. Si no se había respondido `protos_module`: `copier update --data protos_module=…`
    para que aparezca el cableado de CI/Makefile.
@@ -250,7 +250,7 @@ y correr `go build ./... && go test ./...` antes de commitear.
 ## Checklist post-generación
 
 - [ ] `go mod tidy && go build ./... && go vet ./... && go test ./...` en verde
-- [ ] Completar "Qué es este servicio" en `CLAUDE.md`; `cp .env.example .env.dev`; `make up`
+- [ ] Completar "Qué es este servicio" en `AGENTS.md`; `cp .env.example .env.dev`; `make up`
 - [ ] Crear el repo remoto (GitLab/GitHub) y push inicial; scripts con bit `+x`
 
 ### `coolify` (detalle en `docs/deploy.md`)

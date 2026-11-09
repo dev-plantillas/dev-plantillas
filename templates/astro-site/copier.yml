@@ -260,4 +260,12 @@ docs_repo:
     {% if docs_repo and not (docs_repo | regex_search('^https://[A-Za-z0-9.-]+(:[0-9]+)?(/[A-Za-z0-9._~-]+)+$')) %}
     URL https del repo, sin barra final (ej. https://gitlab.com/mi-org/docs), o vacío.
     {% endif %}
+
+tracker_mcp:
+  type: bool
+  help: >-
+    ¿El equipo usa un tracker con MCP (Tekitla u otro que cumpla el protocolo de
+    docs/03 §6)? Suma el servidor `tracker` a .mcp.json; la URL y el token salen
+    de TRACKER_MCP_URL y TRACKER_TOKEN en el entorno de cada persona
+  default: false
 # <<< base común

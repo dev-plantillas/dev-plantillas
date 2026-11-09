@@ -35,7 +35,7 @@ Este README y `copier.yml` no se copian al proyecto; el contenido vive en
 │   # coolify:   docker-compose.coolify.yml, docs/deploy.md
 ├── docs/auth.md (según proveedor), docs/rutas.md
 ├── Makefile (run, test, lint, vuln, image, scan, up...), .env.example, go.mod, go.sum
-└── CLAUDE.md, .claude/settings.json, .copier-answers.yml
+└── AGENTS.md, CLAUDE.md, .claude/settings.json, .mcp.json, .copier-answers.yml
 ```
 
 ## Generar
@@ -54,14 +54,14 @@ cd api-gateway && go build ./... && go test ./...
 | Pregunta | Default | Uso |
 |---|---|---|
 | `repo_name` | `api-gateway` | Repo, binario, servicio (máx. 27: SA `<nombre>-sa`) |
-| `service_description` | texto | `CLAUDE.md` |
+| `service_description` | texto | `AGENTS.md` |
 | `ci_provider` | `gitlab` | `.gitlab-ci.yml` o `.github/workflows/` |
 | `dueño` | `@<org del module_path>/backend` | `CODEOWNERS` y `SECURITY.md` (`@usuario` o `@org/equipo`; base común, `docs/10` de dev-plantillas) |
 | `docs_repo` | vacío | URL del repo de docs: la plantilla de MR/PR enlaza la carpeta del issue ahí |
 | `module_path` | `<host>/mi-org/<repo_name>` | `go.mod` |
 | `http_port` | `8080` | `HTTP_PORT`, Dockerfile, probes |
 | `go_version` | `1.26.10` | ≥ 1.26 (grpc-gateway v2.31) |
-| `protos_module` (+ `protos_version`) | vacío | Repo de protos (plantilla `protos`, `http_gateway=true`): cablea `GOPRIVATE`, token en CI y `make workspace`. El cambio de imports es manual (ver CLAUDE.md del proyecto) |
+| `protos_module` (+ `protos_version`) | vacío | Repo de protos (plantilla `protos`, `http_gateway=true`): cablea `GOPRIVATE`, token en CI y `make workspace`. El cambio de imports es manual (ver AGENTS.md del proyecto) |
 | `auth` | `firebase` | `firebase` \| `oidc` \| `api-key` \| `ninguno` |
 | `firebase_project` | — | Solo firebase: default de `FIREBASE_PROJECT_ID` |
 | `mcp` | `false` | Sirve `/mcp`: los métodos de `routes.yaml` con `mcp:` pasan a ser herramientas para agentes. Requiere auth (docs/15 de dev-plantillas) |

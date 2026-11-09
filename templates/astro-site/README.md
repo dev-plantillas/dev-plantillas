@@ -11,7 +11,7 @@ Especificación: `docs/07-frontend-y-seo.md`.
 
 ```
 <sitio>/
-├── CLAUDE.md, .claude/settings.json   reglas cortas para agentes + permisos
+├── AGENTS.md, CLAUDE.md, .claude/settings.json, .mcp.json   reglas cortas para agentes + permisos
 ├── astro.config.mjs                    site, trailingSlash, i18n, sitemap (lastmod), redirects, astro:env, fuentes IBM Plex de vrb
 ├── .npmrc                              @vrojas1015 → GitHub Packages (token por NODE_AUTH_TOKEN, nunca en el archivo)
 ├── sitio.config.mjs                    nombre, URL, idiomas: única fuente para config, código y scripts

@@ -11,14 +11,14 @@ Leyenda: ✅ publicada · 🔨 en construcción · 📐 especificada · 💭 ide
 
 | Plantilla | Estado | Versión | Spec |
 |---|---|---|---|
-| `go-grpc-service` | ✅ | v0.3.0 | `docs/04` |
-| `protos` | ✅ | v0.3.0 | — |
-| `api-gateway` (fase 1) | ✅ | v0.2.0 | `docs/05` |
-| `angular-app` | ✅ | v0.3.0 | `docs/07` |
-| `docs` | ✅ | v0.3.0 | `docs/06` |
-| `astro-site` | ✅ | v0.2.0 | `docs/07` |
-| `android-app` | ✅ | v0.2.0 | `docs/09` |
-| `e2e-tests` | ✅ | v0.2.0 | `docs/12` |
+| `go-grpc-service` | ✅ | v0.3.1 | `docs/04` |
+| `protos` | ✅ | v0.3.1 | — |
+| `api-gateway` (fase 1) | ✅ | v0.2.1 | `docs/05` |
+| `angular-app` | ✅ | v0.4.0 | `docs/07` |
+| `docs` | ✅ | v0.4.0 | `docs/06` |
+| `astro-site` | ✅ | v0.3.0 | `docs/07` |
+| `android-app` | ✅ | v0.2.1 | `docs/09` |
+| `e2e-tests` | ✅ | v0.2.1 | `docs/12` |
 | `api-gateway` con MCP (`mcp: true`) | 🔨 | — | `docs/15`, `docs/05` |
 | `observabilidad-stack` | 📐 | — | `docs/14` |
 | `react-app` | 📐 | — | `docs/07`, `docs/13` |
@@ -30,9 +30,11 @@ Leyenda: ✅ publicada · 🔨 en construcción · 📐 especificada · 💭 ide
 | Pieza | Estado | Spec |
 |---|---|---|
 | Plugin `dev-agentes`: `/verificar`, hooks `guard-worktree` y `format` | ✅ | `plugins/dev-agentes` |
-| Plugin `dev-agentes` v2: hooks de estado del agente, `/issue-start`, `/cerrar-issue`, `/coordinar` | 📐 | `docs/03` |
-| Gestión de agentes: actores, estados, protocolo con el tracker, `AGENTS.md` | 📐 | `docs/03` |
-| MCP: servidores aprobados, `.mcp.json` y permisos en `_base` | 📐 | `docs/15` |
+| Plugin `dev-agentes` v2: hooks de estado del agente (🔨 0.2.0), `/issue-start`, `/cerrar-issue`, `/coordinar` | 📐 | `docs/03` |
+| Gestión de agentes: actores, estados, protocolo con el tracker | 📐 | `docs/03` |
+| `AGENTS.md` como fuente (plantillas y `docs/workspace/`) y `CLAUDE.md` con `@AGENTS.md` desde `_base` | 🔨 | `docs/03` §8 |
+| Capas de plataforma y `bootstrap` (`.ps1` y `.sh`) en la plantilla `docs`, rutas relativas a la raíz | 🔨 | `docs/01` |
+| MCP: servidores aprobados, `.mcp.json` y permisos en `_base` | 🔨 | `docs/15` §4 |
 | Destinos de deploy Google / Coolify y migración entre ellos | ✅ | `docs/04` |
 | Base común de repos, fase 1 (`templates/_base`: gitleaks, `.gitignore` de secretos, `SECURITY.md`, `CODEOWNERS`, plantilla de MR/PR, título del MR/PR) | ✅ | `docs/10` §11 |
 | Base común de repos, fases 2–5 (manifiesto, Renovate, release-please, protección) | 📐 | `docs/10` |

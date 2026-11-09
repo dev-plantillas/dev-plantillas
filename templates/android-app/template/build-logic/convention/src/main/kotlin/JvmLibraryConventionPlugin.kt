@@ -107,7 +107,7 @@ abstract class VerificarKotlinPuro : DefaultTask() {
                     appendLine("${modulo.get()} tiene que ser Kotlin puro (sin Android) y depende de:")
                     prohibidas.forEach { appendLine("  - ${it.removePrefix("?")}") }
                     append("Mové ese código a un módulo Android (core:data, core:network...) ")
-                    append("y dejá acá solo modelos e interfaces. Ver CLAUDE.md y docs/kmp.md.")
+                    append("y dejá acá solo modelos e interfaces. Ver AGENTS.md y docs/kmp.md.")
                 },
             )
         }

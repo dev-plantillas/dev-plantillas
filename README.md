@@ -19,8 +19,6 @@ Estado y prioridades: [`ROADMAP.md`](ROADMAP.md).
 | `templates/docs/` | Plantilla Copier: repo central de documentación (issues por carpeta, ADRs, runbooks, releases) con frontmatter validado, índices generados y MkDocs Material |
 | `plugins/dev-agentes/` | Plugin de Claude Code: skills, agentes y hooks del flujo de trabajo |
 | `.claude-plugin/` | Marketplace: permite instalar el plugin con `/plugin marketplace add dev-plantillas/dev-plantillas` |
-| `workspace/` | `CLAUDE.md` en capas (plataforma, backend, frontend) y lista de repos |
-| `scripts/bootstrap.ps1` | Arma `C:\dev\<org>` en una máquina nueva |
 | `scripts/new-worktree.ps1` | Crea los worktrees de un issue |
 | `scripts/sincronizar-base.py` | Copia `templates/_base` a cada plantilla; `--comprobar` falla si alguna quedó desactualizada (lo corre el CI) |
 | `scripts/publish-template.sh` | Publica una plantilla en su propio repo con tag |
@@ -50,19 +48,19 @@ Estado y prioridades: [`ROADMAP.md`](ROADMAP.md).
 
 Las plantillas publicadas viven en la organización [`dev-plantillas`](https://github.com/dev-plantillas), una por repo (`gh:dev-plantillas/template-<nombre>`); este monorepo es donde se desarrollan.
 
-```powershell
-# Máquina nueva
-git clone <url>/dev-plantillas C:\dev\<org>\plantillas
-C:\dev\<org>\plantillas\scripts\bootstrap.ps1 -Org <org>
+Máquina nueva: se clona el repo de documentación del proyecto (plantilla
+`docs`) y se corre su `workspace/bootstrap` (`docs/01`). Lo demás, desde la raíz
+del workspace:
 
+```bash
 # Servicio nuevo
-python -m copier copy --vcs-ref v1.0.0 <url>/template-go-grpc-service C:\dev\<org>\backend\agenda-service
+python -m copier copy --vcs-ref v1.0.0 <url>/template-go-grpc-service backend/agenda-service
 
 # App nueva
-python -m copier copy --vcs-ref v1.0.0 <url>/template-angular-app C:\dev\<org>\frontend\admin-web
+python -m copier copy --vcs-ref v1.0.0 <url>/template-angular-app frontend/admin-web
 
 # Traer mejoras de la plantilla a un repo existente
-cd C:\dev\<org>\backend\agenda-service; python -m copier update
+cd backend/agenda-service && python -m copier update
 ```
 
 ## Cambiar una plantilla

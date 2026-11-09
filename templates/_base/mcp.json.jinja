@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+{%- if tracker_mcp %}
+    "tracker": {
+      "type": "http",
+      "url": "${TRACKER_MCP_URL}",
+      "headers": {
+        "Authorization": "Bearer ${TRACKER_TOKEN}"
+      }
+    }
+{%- endif %}
+  }
+}
