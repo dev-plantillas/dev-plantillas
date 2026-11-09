@@ -107,7 +107,7 @@ cp .env.example .env.dev && make up      # postgres:16 + servicio en Docker, esp
 | `module_path` | `<gitlab.com\|github.com>/mi-org/<service>-service` | `module` de `go.mod` e imports |
 | `grpc_port` | `5000` | `GRPC_PORT`, Dockerfile, compose, probes de Cloud Run |
 | `db_schema` | `service_name` con `_` | Schema Postgres, `TableName()`, migraciones, usuario `<schema>_user` |
-| `go_version` | `1.25.8` | `go.mod`, imagen `golang:<v>` del Dockerfile y de CI |
+| `go_version` | `1.26.10` | `go.mod`, imagen `golang:<v>` del Dockerfile y de CI |
 | `protos_module` | vacío | Módulo Go del repo de protos compartido (ver "Protos") |
 | `protos_version` | `latest` | Solo si hay `protos_module`; aparece en la doc/`go get` |
 | `deploy_target` | `cloud-run` | `cloud-run`, `coolify` o `ninguno` (ver "Destinos de deploy") |
