@@ -25,6 +25,7 @@ Este README y `copier.yml` no se copian al proyecto; el contenido vive en
 │   │   └── *_test.go                           # tests de autorización GENERADOS desde routes.yaml + pipeline
 │   ├── middleware/                             # request-id, access log redactado, recover, cabeceras, CORS, limpieza
 │   ├── auth/ (+ authtest/)                     # JWT Firebase/OIDC (JWKS en caché), API keys SHA-256; emisor de prueba
+│   ├── mcpserver/                              # [mcp] /mcp: herramientas desde routes.yaml (SDK oficial de Go)
 │   ├── routes/ ratelimit/ config/ reqctx/ apierror/ telemetry/
 ├── proto/example/v1/item.proto, buf.*          # ejemplo local (= ItemService de go-grpc-service/protos) con google.api.http
 ├── gen/go/example/v1/ (pb, grpc, pb.gw)        # pre-generado; gen/openapi/ (api.swagger.json embebido)
@@ -63,6 +64,7 @@ cd api-gateway && go build ./... && go test ./...
 | `protos_module` (+ `protos_version`) | vacío | Repo de protos (plantilla `protos`, `http_gateway=true`): cablea `GOPRIVATE`, token en CI y `make workspace`. El cambio de imports es manual (ver CLAUDE.md del proyecto) |
 | `auth` | `firebase` | `firebase` \| `oidc` \| `api-key` \| `ninguno` |
 | `firebase_project` | — | Solo firebase: default de `FIREBASE_PROJECT_ID` |
+| `mcp` | `false` | Sirve `/mcp`: los métodos de `routes.yaml` con `mcp:` pasan a ser herramientas para agentes. Requiere auth (docs/15 de dev-plantillas) |
 | `oidc_issuer`, `oidc_audience` | — | Solo oidc (issuer https) |
 | `deploy_target` | `cloud-run` | `cloud-run` \| `coolify` \| `ninguno` |
 | `gcp_project`, `gcp_region`, `artifact_repo` | — | Solo cloud-run |
@@ -113,6 +115,16 @@ límite × instancias (`maxScale`; lo dicen `cloudrun.*.yaml` y `docs/rutas.md`)
   Firebase: JWKS `https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com`
   (verificado: responde JWK RS256 con `max-age`). API keys: `gwk_` + 256 bits,
   SHA-256 en config/secret, scopes y vencimiento.
+- **MCP (`mcp: true`)**: endpoint `/mcp` con el SDK oficial
+  (`github.com/modelcontextprotocol/go-sdk`), transporte HTTP streamable **sin
+  sesión** y respuestas JSON. Una herramienta por método de `routes.yaml` con
+  `mcp: {tool, description}`; el esquema de entrada sale del mensaje de request
+  del `.proto` y las anotaciones del verbo HTTP (GET = `readOnlyHint`). Cada
+  llamada se traduce al request REST y **vuelve a entrar al mux**: auth, roles,
+  rate limit, límites, deadline y formato de error son los de la API, sin un
+  segundo camino a los servicios. `/mcp` pide credencial (401 sin ella); un rol
+  que falta vuelve como resultado con `isError` y `PERMISSION_DENIED`. Una línea
+  de log `mcp tool` por llamada (herramienta, ruta, `user_id`, status).
 - **Upstreams en Cloud Run**: TLS + ID token por audiencia con
   `google.golang.org/api/idtoken` (servidor de metadata, sin claves). En
   Coolify/local: plaintext en la red interna.
@@ -127,7 +139,7 @@ límite × instancias (`maxScale`; lo dicen `cloudrun.*.yaml` y `docs/rutas.md`)
 
 ## Verificar cambios en la plantilla
 
-- Generar las 4 auth × ambos CI × los 3 destinos (CI del repo: job
+- Generar las 4 auth × ambos CI × los 3 destinos, con y sin `mcp` (CI del repo: job
   `api-gateway` de `.github/workflows/templates.yml`) y correr `go mod tidy
   -diff`, `go build/vet/test`, `gofmt -l`, `govulncheck`; `actionlint` sobre
   los workflows generados.
@@ -143,6 +155,9 @@ límite × instancias (`maxScale`; lo dicen `cloudrun.*.yaml` y `docs/rutas.md`)
 - Rate limit solo en memoria (por instancia). Sin circuit breaker por servicio
   (solo deadline por llamada); sin `protovalidate` (fase 2).
 - Una sola forma de auth por gateway (no Firebase + API keys a la vez).
+- MCP: sin OAuth del protocolo (el cliente manda el mismo `Authorization` o
+  `X-API-Key` que la API), sin `x-agent-id` y sin RPCs con streaming
+  (docs/15 §11-12: fase de escritura).
 - Las rutas con `additional_bindings` y verbos custom están soportadas por el
   mapeo, pero el ejemplo y los tests generados solo cubren GET/POST.
 - En Cloud Run, `UPSTREAM_<NAME>_ADDR` de `cloudrun.*.yaml` se completa a mano

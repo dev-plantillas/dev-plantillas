@@ -107,6 +107,18 @@ auth:
     "Ninguna (todas las rutas públicas; solo demos o APIs abiertas)": ninguno
   default: firebase
 
+mcp:
+  type: bool
+  help: >-
+    ¿Exponer un servidor MCP en /mcp? Los métodos de routes.yaml con `mcp:` pasan
+    a ser herramientas para agentes, con la misma auth, roles y rate limit que la
+    API REST (docs/15 de dev-plantillas). Requiere auth
+  default: false
+  validator: >-
+    {% if mcp and auth == 'ninguno' %}
+    MCP necesita auth: cada llamada tiene que tener un actor (docs/15 §8).
+    {% endif %}
+
 firebase_project:
   type: str
   help: "ID del proyecto de Firebase (default de FIREBASE_PROJECT_ID; cada entorno lo puede pisar)"

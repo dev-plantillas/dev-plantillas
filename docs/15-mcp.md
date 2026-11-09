@@ -113,6 +113,13 @@ agente ──MCP/HTTP──▶ api-gateway /mcp ──gRPC──▶ <dominio>-se
 web    ──REST─────▶ api-gateway /v1  ──gRPC──▶ <dominio>-service
 ```
 
+**Cómo lo hace la plantilla:** una herramienta por método de `routes.yaml` con
+`mcp: {tool, description}`. La llamada se traduce al request REST equivalente
+y vuelve a entrar al mux del gateway, así que la política es exactamente la de
+la ruta (auth, roles, rate limit, límites, deadline, errores con `reason`). El
+esquema de entrada sale del mensaje de request del `.proto`. `/mcp` usa la misma
+credencial que la API. Detalle en `docs/rutas.md` del gateway generado.
+
 ## 7. Exponer: diseño de herramientas
 
 | Regla | Por qué |
@@ -140,7 +147,7 @@ web    ──REST─────▶ api-gateway /v1  ──gRPC──▶ <domini
 | Plantilla | Agrega |
 |---|---|
 | `_base` (todas) | `.mcp.json` vacío o con el tracker, permisos MCP en `.claude/settings.json`, variables en `.env.example` |
-| `api-gateway` | Opción `mcp: true`: endpoint `/mcp` con el SDK oficial de Go, herramientas generadas a partir de una lista de RPCs expuestos, tokens por actor |
+| `api-gateway` | Opción `mcp: true`: endpoint `/mcp` con el SDK oficial de Go; una herramienta por método de `routes.yaml` con `mcp: {tool, description}`, con la misma política que la ruta REST ✅. Tokens por actor y `x-agent-id`: fase 3 |
 | `docs` | Plantilla de ADR "sumar un servidor MCP" |
 | Plugin `dev-agentes` | Usa el MCP del tracker en sus hooks y skills (`docs/03` §7) |
 
@@ -148,8 +155,8 @@ web    ──REST─────▶ api-gateway /v1  ──gRPC──▶ <domini
 
 - [ ] Un repo generado trae `.mcp.json` y permisos MCP, y `sincronizar-base.py --comprobar` lo verifica
 - [ ] Ningún secreto en `.mcp.json` (lo prueba gitleaks en el CI de la plantilla)
-- [ ] `api-gateway` con `mcp: true` genera un proyecto que pasa sus tests e2e: listar, leer y escribir con un token, y fallar sin token o con alcance insuficiente
-- [ ] Las herramientas de escritura quedan auditadas con actor y agente
+- [x] `api-gateway` con `mcp: true` genera un proyecto que pasa sus tests e2e: listar, leer y escribir con un token, y fallar sin token o con alcance insuficiente (`app/gateway/mcp_test.go`, cliente del SDK oficial)
+- [ ] Las herramientas de escritura quedan auditadas con actor y agente (actor ✅: línea `mcp tool` con `user_id`; agente: falta `x-agent-id`)
 - [ ] Tekitla usa la opción y su MCP lo consume una sesión de Claude Code y una de Codex
 
 ## 11. Decisiones abiertas

@@ -34,6 +34,12 @@ var methodRe = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9
 // roleRe: roles/scopes legibles; nada de espacios ni comas (viajan en x-roles).
 var roleRe = regexp.MustCompile(`^[A-Za-z0-9_.:/-]{1,64}$`)
 
+// toolRe: nombre de herramienta MCP, verbo_objeto en inglés (docs/15 §7).
+var toolRe = regexp.MustCompile(`^[a-z][a-z0-9]*(_[a-z0-9]+)*$`)
+
+// maxToolDescription: la descripción se paga en tokens en cada sesión.
+const maxToolDescription = 300
+
 // Rate es un token bucket: PerMinute fichas por minuto, ráfaga de Burst.
 type Rate struct {
 	PerMinute int `yaml:"per_minute"`
@@ -51,6 +57,14 @@ type Policy struct {
 	RateLimit    Rate          // límite efectivo
 	OwnRateLimit bool          // true: bucket propio de la ruta; false: bucket global
 	Sunset       string        // si no está vacío, cabeceras Deprecation + Sunset
+	MCP          *MCPTool      // si no es nil, el método también es una herramienta de /mcp
+}
+
+// MCPTool expone un método como herramienta MCP (gateway con mcp: true). La
+// herramienta pasa por la misma política que la ruta REST.
+type MCPTool struct {
+	Name        string // list_items
+	Description string // corta y concreta
 }
 
 // Table es routes.yaml ya validado.
@@ -102,6 +116,12 @@ type fileRoute struct {
 	MaxBodyBytes *int64    `yaml:"max_body_bytes"`
 	RateLimit    *fileRate `yaml:"rate_limit"`
 	Sunset       string    `yaml:"sunset"`
+	MCP          *fileMCP  `yaml:"mcp"`
+}
+
+type fileMCP struct {
+	Tool        string `yaml:"tool"`
+	Description string `yaml:"description"`
 }
 
 type fileDefaults struct {
@@ -161,11 +181,33 @@ func Parse(data []byte) (*Table, error) {
 		}
 		t.policies[method] = p
 	}
+	tools := map[string]string{}
+	for method, p := range t.policies {
+		if p.MCP == nil {
+			continue
+		}
+		if prev, dup := tools[p.MCP.Name]; dup {
+			a, b := min(prev, method), max(prev, method)
+			errs = append(errs, fmt.Errorf("herramienta MCP %q repetida en %s y %s", p.MCP.Name, a, b))
+		}
+		tools[p.MCP.Name] = method
+	}
 	if len(errs) > 0 {
 		sort.Slice(errs, func(i, j int) bool { return errs[i].Error() < errs[j].Error() })
 		return nil, errors.Join(errs...)
 	}
 	return t, nil
+}
+
+// Tools devuelve los métodos con herramienta MCP, ordenados.
+func (t *Table) Tools() []*Policy {
+	var out []*Policy
+	for _, m := range t.Methods() {
+		if p := t.policies[m]; p.MCP != nil {
+			out = append(out, p)
+		}
+	}
+	return out
 }
 
 func buildPolicy(def Policy, method string, r *fileRoute) (*Policy, error) {
@@ -211,7 +253,28 @@ func buildPolicy(def Policy, method string, r *fileRoute) (*Policy, error) {
 		}
 		p.Sunset = r.Sunset
 	}
+	if r.MCP != nil {
+		tool, err := buildTool(method, r)
+		if err != nil {
+			return nil, err
+		}
+		p.MCP = tool
+	}
 	return &p, nil
+}
+
+func buildTool(method string, r *fileRoute) (*MCPTool, error) {
+	if r.Deny {
+		return nil, fmt.Errorf("ruta %q: deny: true y mcp a la vez", method)
+	}
+	if len(r.MCP.Tool) > 64 || !toolRe.MatchString(r.MCP.Tool) {
+		return nil, fmt.Errorf("ruta %q: mcp.tool %q inválido (snake_case en inglés, verbo_objeto, máx. 64)", method, r.MCP.Tool)
+	}
+	d := strings.TrimSpace(r.MCP.Description)
+	if d == "" || len([]rune(d)) > maxToolDescription {
+		return nil, fmt.Errorf("ruta %q: mcp.description obligatoria y de hasta %d caracteres", method, maxToolDescription)
+	}
+	return &MCPTool{Name: r.MCP.Tool, Description: d}, nil
 }
 
 func applyCommon(p *Policy, timeout string, body *int64, rate *fileRate, where string) error {

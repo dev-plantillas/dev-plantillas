@@ -19,7 +19,7 @@ Leyenda: ✅ publicada · 🔨 en construcción · 📐 especificada · 💭 ide
 | `astro-site` | ✅ | v0.2.0 | `docs/07` |
 | `android-app` | ✅ | v0.2.0 | `docs/09` |
 | `e2e-tests` | ✅ | v0.2.0 | `docs/12` |
-| `api-gateway` con MCP (`mcp: true`) | 📐 | — | `docs/15` |
+| `api-gateway` con MCP (`mcp: true`) | 🔨 | — | `docs/15`, `docs/05` |
 | `observabilidad-stack` | 📐 | — | `docs/14` |
 | `react-app` | 📐 | — | `docs/07`, `docs/13` |
 | `python-grpc-service` | 💭 | — | `docs/13` |
