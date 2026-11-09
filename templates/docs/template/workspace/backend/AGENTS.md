@@ -5,7 +5,7 @@ propio (puerto, schema, entidades, particularidades).
 
 ## Arquitectura (hexagonal)
 
-```
+```text
 adapters → application → domain ← infra
                          (ports)
 ```

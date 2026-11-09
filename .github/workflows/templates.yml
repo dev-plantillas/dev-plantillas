@@ -533,6 +533,25 @@ jobs:
           assert "mcp__tracker__get_issue" in allow, allow
           PY
           done
+      - name: bootstrap del workspace (plantilla docs, docs/01)
+        env:
+          GIT_AUTHOR_NAME: ci
+          GIT_AUTHOR_EMAIL: ci@example.com
+          GIT_COMMITTER_NAME: ci
+          GIT_COMMITTER_EMAIL: ci@example.com
+        run: |
+          r="$RUNNER_TEMP/ws"
+          copier copy --defaults --trust -d org_name=demo templates/docs "$r/docs"
+          git init -q -b main "$RUNNER_TEMP/origen" && git -C "$RUNNER_TEMP/origen" commit -q --allow-empty -m init
+          printf 'backend/protos %s\n' "$RUNNER_TEMP/origen" > "$r/docs/workspace/repos.txt"
+          bash "$r/docs/workspace/bootstrap.sh"
+          bash "$r/docs/workspace/bootstrap.sh"   # idempotente
+          test -d "$r/backend/protos/.git"
+          test "$(cat "$r/CLAUDE.md")" = "@docs/workspace/CLAUDE.md"
+          test "$(cat "$r/backend/CLAUDE.md")" = "@../docs/workspace/backend/AGENTS.md"
+          grep -q "no editar" "$r/frontend/AGENTS.md"
+          mkdir -p "$RUNNER_TEMP/OneDrive/x" && cp -r "$r/docs" "$RUNNER_TEMP/OneDrive/x/"
+          if bash "$RUNNER_TEMP/OneDrive/x/docs/workspace/bootstrap.sh"; then echo "corrió dentro de OneDrive"; exit 1; fi
       - name: Chequeo del título del MR/PR
         run: |
           v=templates/_base/scripts/verificar-titulo.sh
