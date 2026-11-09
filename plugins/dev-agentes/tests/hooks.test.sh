@@ -71,5 +71,97 @@ if command -v gofmt >/dev/null; then
 fi
 rm -rf "$tmp"
 
+# --- estado.sh: reportes al tracker (curl falso, sin red) --------------------
+ok() { pass=$((pass+1)); }
+ko() { fail=$((fail+1)); echo "FAIL: estado: $1"; }
+FAKE="$(cd "$(dirname "$0")/fake-curl" && pwd)"
+chmod +x "$FAKE/curl" 2>/dev/null
+ws=$(mktemp -d)
+export FAKE_CURL_LOG="$ws/curl.log" DEV_AGENTES_LOG="$ws/estado.log" DEV_AGENTES_ESTADO_SYNC=1
+export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t
+mkdir -p "$ws/docs/workspace" "$ws/worktrees/issue-42"
+repo="$ws/worktrees/issue-42/orders-service"
+git init -q -b feat/issue-42-descuentos "$repo" && git -C "$repo" commit -q --allow-empty -m init
+
+# estado <evento> <json> [VAR=valor...]: corre el hook con el tracker configurado.
+estado() {
+  local ev=$1 json=$2; shift 2
+  : >"$FAKE_CURL_LOG"
+  printf '%s' "$json" | env PATH="$FAKE:$PATH" TRACKER_MCP_URL=https://tracker.test/mcp TRACKER_TOKEN=tok "$@" \
+    bash "$HOOKS/estado.sh" "$ev" >"$ws/stdout" 2>&1
+}
+# Cuerpo del tools/call (última línea del log) y su validez como JSON.
+reporte() { tail -1 "$FAKE_CURL_LOG" | cut -d'|' -f3-; }
+json_ok() {
+  local py; for py in python3 python; do "$py" -c 1 >/dev/null 2>&1 && break || py=; done
+  [ -z "$py" ] && return 0
+  reporte | "$py" -c 'import json,sys; json.load(sys.stdin)'
+}
+sev() { printf '{"session_id":"s1","cwd":"%s"%s}' "$(esc "$1")" "${2:-}"; }
+I42="$ws/worktrees/issue-42"
+
+estado turno "$(sev "$I42")" DEV_AGENTES_NO_ESTADO=1
+[ ! -s "$FAKE_CURL_LOG" ] && ok || ko "DEV_AGENTES_NO_ESTADO=1 reportó igual"
+: >"$FAKE_CURL_LOG"
+printf '%s' "$(sev "$I42")" | env -u TRACKER_MCP_URL PATH="$FAKE:$PATH" bash "$HOOKS/estado.sh" turno >"$ws/stdout" 2>&1; rc=$?
+[ $rc = 0 ] && [ ! -s "$FAKE_CURL_LOG" ] && ok || ko "sin TRACKER_MCP_URL tenía que salir sin reportar"
+
+estado turno "$(sev "$I42" ',"session_title":"issue-42"')"; rc=$?
+r=$(reporte)
+[ $rc = 0 ] && ok || ko "turno: exit $rc"
+[ ! -s "$ws/stdout" ] && ok || ko "turno escribió en stdout (entra al contexto)"
+[ "$(wc -l <"$FAKE_CURL_LOG" | tr -d ' ')" = 3 ] && ok || ko "turno: se esperaban initialize, initialized y tools/call"
+[[ $r == *'"name":"report_status"'* && $r == *'"state":"trabajando"'* ]] && ok || ko "turno: $r"
+[[ $r == *'"issue":"42"'* && $r == *'"branch":"feat/issue-42-descuentos"'* ]] && ok || ko "turno: issue/rama: $r"
+[[ $r == *'"cwd":"worktrees/issue-42"'* && $r == *'"name":"issue-42"'* && $r == *'"tool":"claude-code"'* ]] && ok || ko "turno: cwd/nombre: $r"
+[[ $r =~ \"at\":\"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+Z\" ]] && ok || ko "turno: at: $r"
+[[ $(tail -1 "$FAKE_CURL_LOG") == 's-123|Bearer tok|'* ]] && ok || ko "turno: sin Mcp-Session-Id o token en tools/call"
+json_ok && ok || ko "turno: JSON inválido: $r"
+
+estado inicio "$(sev "$I42")"
+[[ $(reporte) == *'"state":"en-reposo"'* ]] && ok || ko "inicio: $(reporte)"
+
+estado espera "$(sev "$I42" ',"notification_type":"permission_prompt","message":"Claude needs your permission to use Bash"')"
+[[ $(reporte) == *'"state":"esperando-ok"'*'"summary":"Claude needs your permission to use Bash"'* ]] && ok || ko "espera: $(reporte)"
+
+estado reposo "$(sev "$I42" ',"last_assistant_message":"Listo: \"tests\" en verde\nlínea 2\\\\ruta"')"
+[[ $(reporte) == *'"state":"en-reposo"'*'"summary":"Listo: \"tests\" en verde línea 2\\ruta"'* ]] && ok || ko "reposo: $(reporte)"
+json_ok && ok || ko "reposo: JSON inválido: $(reporte)"
+
+# Issue por nombre de sesión, fuera de un worktree de issue y sin rama de issue.
+estado turno "$(sev "$ws/docs" ',"session_title":"issue-7"')"
+[[ $(reporte) == *'"issue":"7"'* && $(reporte) == *'"cwd":"docs"'* ]] && ok || ko "issue por nombre de sesión: $(reporte)"
+
+# Latido: como mucho uno por minuto por sesión.
+rm -f "${TMPDIR:-/tmp}/dev-agentes-latido-lat1"
+estado latido '{"session_id":"lat1","cwd":"'"$(esc "$I42")"'"}'
+n1=$(wc -l <"$FAKE_CURL_LOG" | tr -d ' ')
+estado latido '{"session_id":"lat1","cwd":"'"$(esc "$I42")"'"}'
+n2=$(wc -l <"$FAKE_CURL_LOG" | tr -d ' ')
+[ "$n1" = 3 ] && [ "$n2" = 0 ] && ok || ko "latido: primero $n1 requests, segundo $n2 (esperado 3 y 0)"
+rm -f "${TMPDIR:-/tmp}/dev-agentes-latido-lat1"
+
+# Fin: cambios sin commit y rama sin push.
+echo x >"$repo/nuevo.txt"
+git -C "$repo" branch otra-local
+estado fin "$(sev "$I42" ',"reason":"prompt_input_exit"')"
+r=$(reporte)
+[[ $r == *'"state":"terminada"'* && $r == *'"uncommitted":["orders-service (1)"]'* ]] && ok || ko "fin: sin commit: $r"
+[[ $r == *'"orders-service feat/issue-42-descuentos"'* && $r == *'"orders-service otra-local"'* ]] && ok || ko "fin: sin push: $r"
+json_ok && ok || ko "fin: JSON inválido: $r"
+
+# Tracker caído: no bloquea y queda en el log.
+: >"$DEV_AGENTES_LOG"
+estado turno "$(sev "$I42")" FAKE_CURL_STATUS=500; rc=$?
+[ $rc = 0 ] && grep -q 'HTTP 500' "$DEV_AGENTES_LOG" && ok || ko "tracker caído: exit $rc, log: $(cat "$DEV_AGENTES_LOG")"
+
+# En segundo plano (como en una sesión real): vuelve enseguida y reporta igual.
+: >"$FAKE_CURL_LOG"
+printf '%s' "$(sev "$I42")" | env PATH="$FAKE:$PATH" TRACKER_MCP_URL=https://tracker.test/mcp TRACKER_TOKEN=tok DEV_AGENTES_ESTADO_SYNC= \
+  bash "$HOOKS/estado.sh" turno >/dev/null 2>&1
+for _ in 1 2 3 4 5 6 7 8 9 10; do [ "$(wc -l <"$FAKE_CURL_LOG" | tr -d ' ')" = 3 ] && break; sleep 0.3; done
+[ "$(wc -l <"$FAKE_CURL_LOG" | tr -d ' ')" = 3 ] && ok || ko "segundo plano: no llegó el reporte"
+rm -rf "$ws"
+
 echo "hooks: $pass ok, $fail fallidos"
 [ $fail = 0 ]

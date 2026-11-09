@@ -134,6 +134,26 @@ servidor `tracker` y les pone permisos:
 Un tracker puede ofrecer más; lo que borra o cierra pide confirmación o se
 niega por repo.
 
+**Argumentos de `report_status`.** Los usan los hooks de `dev-agentes` (§7) y
+el agente cuando se declara `bloqueado`:
+
+| Argumento | Obligatorio | Contenido |
+|---|---|---|
+| `session_id` | Sí | Id de la sesión en su herramienta |
+| `state` | Sí | `trabajando`, `esperando-ok`, `en-reposo`, `bloqueado` o `terminada` (`colgado` lo pone el tracker) |
+| `at` | Sí | Momento del evento, RFC 3339 en UTC. El tracker descarta un reporte más viejo que el último que tiene: los hooks no esperan la respuesta y pueden llegar desordenados |
+| `tool` | No | `claude-code`, `codex`, `cloud` |
+| `name` | No | Nombre de la sesión (`issue-42`, `review-42`, `coord`) |
+| `host` | No | Nombre de la máquina |
+| `cwd` | No | Carpeta de la sesión, relativa a la raíz del workspace (`worktrees/issue-42`, `docs/01`) |
+| `branch` | No | Rama actual (`feat/issue-42-descuentos`) |
+| `issue` | No | Número del issue (`42`), deducido de la rama o de la carpeta; el tracker lo traduce a su clave |
+| `summary` | No | Hasta 500 caracteres: resumen del turno (`en-reposo`), qué espera (`esperando-ok`) o qué lo bloquea (`bloqueado`) |
+| `pending` | No | Al cerrar: lo que quedó sólo local. `{"unpushed": ["orders-service feat/issue-42-x"], "uncommitted": ["api-gateway (3)"]}` |
+
+Un `report_status` con un `session_id` nuevo registra la sesión. Cada reporte
+cuenta como latido.
+
 **Lo que el tracker automatiza** (cada uno se especifica en el tracker):
 
 - MR/PR abierto → `En revisión`; todos mergeados → `Testing` (GitLab y GitHub).
@@ -148,8 +168,9 @@ que el agente decide usar.
 
 | Pieza | Evento o comando | Qué hace |
 |---|---|---|
-| Hook | `SessionStart` | Registra la sesión en el tracker (actor, herramienta, carpeta, rama) y la liga al issue |
+| Hook | `SessionStart` | Registra la sesión en el tracker (actor, herramienta, carpeta, rama) y la liga al issue; estado `en-reposo` |
 | Hook | `UserPromptSubmit` | Estado `trabajando` + latido |
+| Hook | `PostToolUse` | Latido mientras trabaja, como mucho uno por minuto (un turno largo no queda `colgado`) |
 | Hook | `Notification` | Estado `esperando-ok` |
 | Hook | `Stop` | Estado `en-reposo` + resumen del turno |
 | Hook | `SessionEnd` | Estado `terminada`; avisa si quedan ramas sin push, cambios sin commit o procesos que la sesión levantó |
@@ -158,7 +179,13 @@ que el agente decide usar.
 | Skill | `/coordinar` | Pregunta a todas las sesiones activas su estado y junta las respuestas (§9) |
 
 Los hooks no bloquean nunca: si el tracker no responde, se anota y se sigue.
-Sin tracker configurado, no hacen nada. Codex y los agentes en la nube no
+Sin tracker configurado, no hacen nada. Los hooks de estado (✅ en
+`dev-agentes` 0.2.0) llaman a `report_status` (§6) con `TRACKER_MCP_URL` y
+`TRACKER_TOKEN`, las mismas variables del `.mcp.json` (`docs/15` §4).
+`Notification` reporta `esperando-ok` sólo en pedidos de permiso y preguntas
+al usuario, no en el aviso de inactividad. Lo que el hook `SessionEnd` no
+puede saber son los procesos que la sesión levantó: esa parte del aviso sigue
+siendo de la regla de §5. Codex y los agentes en la nube no
 tienen estos hooks: reportan por el MCP del tracker (`docs/15`) y se ligan por
 la rama.
 

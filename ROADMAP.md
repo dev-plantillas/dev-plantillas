@@ -30,7 +30,7 @@ Leyenda: ✅ publicada · 🔨 en construcción · 📐 especificada · 💭 ide
 | Pieza | Estado | Spec |
 |---|---|---|
 | Plugin `dev-agentes`: `/verificar`, hooks `guard-worktree` y `format` | ✅ | `plugins/dev-agentes` |
-| Plugin `dev-agentes` v2: hooks de estado del agente, `/issue-start`, `/cerrar-issue`, `/coordinar` | 📐 | `docs/03` |
+| Plugin `dev-agentes` v2: hooks de estado del agente (🔨 0.2.0), `/issue-start`, `/cerrar-issue`, `/coordinar` | 📐 | `docs/03` |
 | Gestión de agentes: actores, estados, protocolo con el tracker | 📐 | `docs/03` |
 | `AGENTS.md` como fuente (`workspace/` y plantillas) y `CLAUDE.md` con `@AGENTS.md` desde `_base` | 🔨 | `docs/03` §8 |
 | MCP: servidores aprobados, `.mcp.json` y permisos en `_base` | 🔨 | `docs/15` §4 |
