@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# herdr falso para los tests de herdr.sh: anota cada llamada en $FAKE_HERDR_LOG.
+printf '%s\n' "$*" >>"$FAKE_HERDR_LOG"

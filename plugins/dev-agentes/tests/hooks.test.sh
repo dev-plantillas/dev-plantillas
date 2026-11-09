@@ -163,5 +163,26 @@ for _ in 1 2 3 4 5 6 7 8 9 10; do [ "$(wc -l <"$FAKE_CURL_LOG" | tr -d ' ')" = 3
 [ "$(wc -l <"$FAKE_CURL_LOG" | tr -d ' ')" = 3 ] && ok || ko "segundo plano: no llegó el reporte"
 rm -rf "$ws"
 
+# --- herdr.sh: barra lateral de herdr (herdr falso) ---------------------------
+FH="$(cd "$(dirname "$0")/fake-herdr" && pwd)"
+chmod +x "$FH/herdr" 2>/dev/null
+export FAKE_HERDR_LOG; FAKE_HERDR_LOG=$(mktemp)
+herdr_hook() { # evento [VAR=valor...]
+  local ev=$1; shift
+  : >"$FAKE_HERDR_LOG"
+  echo "{}" | env -u HERDR_BIN_PATH PATH="$FH:$PATH" HERDR_ENV=1 HERDR_PANE_ID=w1:p2 "$@" bash "$HOOKS/herdr.sh" "$ev" >"$FAKE_HERDR_LOG.out" 2>&1
+}
+herdr_hook inicio; rc=$?
+[ $rc = 0 ] && [ ! -s "$FAKE_HERDR_LOG.out" ] && ok || ko "herdr inicio: exit $rc o escribió en stdout"
+grep -q -- '--source dev-estados.*--state-label blocked=⚠ TU DECISIÓN' "$FAKE_HERDR_LOG" && ok || ko "herdr inicio: sin etiquetas ($(cat "$FAKE_HERDR_LOG"))"
+grep -q -- 'w1:p2 --source dev-espera --clear-token espera --clear-token espera_tipo --clear-token espera_a' "$FAKE_HERDR_LOG" && ok || ko "herdr inicio: no limpió la marca"
+herdr_hook turno
+[ "$(wc -l <"$FAKE_HERDR_LOG" | tr -d ' ')" = 1 ] && grep -q 'dev-espera --clear-token espera' "$FAKE_HERDR_LOG" && ok || ko "herdr turno: $(cat "$FAKE_HERDR_LOG")"
+herdr_hook inicio HERDR_ENV=
+[ ! -s "$FAKE_HERDR_LOG" ] && ok || ko "fuera de herdr no tiene que llamar a herdr"
+herdr_hook inicio DEV_AGENTES_NO_HERDR=1
+[ ! -s "$FAKE_HERDR_LOG" ] && ok || ko "DEV_AGENTES_NO_HERDR=1 llamó a herdr"
+rm -f "$FAKE_HERDR_LOG" "$FAKE_HERDR_LOG.out"
+
 echo "hooks: $pass ok, $fail fallidos"
 [ $fail = 0 ]
