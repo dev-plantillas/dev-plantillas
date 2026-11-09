@@ -141,7 +141,7 @@ Configuración 12-factor: el código lee **todo** de variables de entorno
 | | `cloud-run` | `coolify` | `ninguno` |
 |---|---|---|---|
 | CI en MR/PR | tests | tests | tests |
-| Tag `qa-v*` / `prod-v*` | Cloud Build → Artifact Registry → `gcloud run services replace` | `docker build` → GHCR / GitLab Registry (tag inmutable + `qa`/`prod`) → `curl $COOLIFY_URL/api/v1/deploy?uuid=...` | — |
+| Tag `qa-v*` / `prod-v*` | Cloud Build → Artifact Registry → `gcloud run services replace` | `docker build` → GHCR / GitLab Registry (tag inmutable + `qa`/`prod`) → `curl -X POST $COOLIFY_URL/api/v1/deploy?uuid=...` | — |
 | Guarda de prod si el release toca `migrations/` | sí | sí | — |
 | Health | probes gRPC de Cloud Run | `healthcheck` del compose (`<binario> healthcheck`) | — |
 | Postgres | Cloud SQL | `postgres:16` en el compose, volumen persistente, backups a S3 (doc) | — |

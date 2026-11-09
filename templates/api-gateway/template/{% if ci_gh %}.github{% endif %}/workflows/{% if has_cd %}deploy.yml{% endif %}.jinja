@@ -151,7 +151,7 @@ jobs:
 
       - name: Deploy (Coolify)
         run: |
-          curl -fsS "$COOLIFY_URL/api/v1/deploy?uuid=$COOLIFY_RESOURCE_UUID&force=false" \
+          curl -fsS -X POST "$COOLIFY_URL/api/v1/deploy?uuid=$COOLIFY_RESOURCE_UUID&force=false" \
             -H "Authorization: Bearer $COOLIFY_TOKEN"
           echo
           echo "Deploy encolado en Coolify. Seguilo en el panel (Deployments) del recurso."

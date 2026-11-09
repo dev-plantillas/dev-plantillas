@@ -18,7 +18,7 @@ git tag prod-v0.1.0 && git push origin prod-v0.1.0   # idem prod (auto salvo mig
 
 ```
 tag qa-v1.2.3 ─▶ CI: test ─▶ docker build ─▶ push <registry>/<repo>:qa-v1.2.3 y :qa
-                                          └▶ curl $COOLIFY_URL/api/v1/deploy?uuid=<recurso QA>
+                                          └▶ curl -X POST $COOLIFY_URL/api/v1/deploy?uuid=<recurso QA>
 Coolify (VPS) ─▶ docker compose -f docker-compose.coolify.yml up (pull_policy: always)
                  app (IMAGE_TAG=qa)  +  postgres:16 (volumen persistente)
 ```
@@ -139,9 +139,11 @@ paquete queda privado y vinculado al repo; el VPS lo baja con el token del paso 
 Probar la llamada a la API a mano (no despliega nada si el UUID es inválido):
 
 ```bash
-curl -fsS "$COOLIFY_URL/api/v1/deploy?uuid=$COOLIFY_RESOURCE_UUID_QA&force=false" \
+curl -fsS -X POST "$COOLIFY_URL/api/v1/deploy?uuid=$COOLIFY_RESOURCE_UUID_QA&force=false" \
   -H "Authorization: Bearer $COOLIFY_TOKEN"
 ```
+
+Es `POST`: desde Coolify 4.6 un `GET` a `/api/v1/deploy` responde `405 Method Not Allowed`.
 
 ## 5. Primer deploy y migraciones
 
@@ -169,10 +171,12 @@ El servicio es **interno**: el compose no publica el puerto de la app al host
 mismo servidor y es lo único con dominio público.
 
 - **Gateway en otro recurso de Coolify**: cada recurso de Docker Compose tiene
-  su propia red. Para que el gateway resuelva este servicio hay que ponerlos en
-  una red compartida (Coolify tiene una opción para conectar el recurso a la
-  red predefinida; verificá el nombre en tu versión) y usar como host el
-  nombre del contenedor/servicio que muestra Coolify.
+  su propia red. Para que el gateway resuelva este servicio, activá
+  *Connect to Predefined Network* en los dos recursos y, en éste, *Consistent
+  name* con un nombre propio (p. ej. `{{ service_name }}-qa`). El gateway lo
+  llama como `app-<nombre>:{{ grpc_port }}`. Con el nombre generado (rolling
+  updates) el contenedor es `app-<uuid>-<timestamp>` y en la red sólo tiene
+  ese alias y `app`: `app-<uuid>` **no resuelve**.
 - **gRPC público detrás del proxy de Coolify (Traefik)**: gRPC necesita HTTP/2
   de punta a punta. Traefik termina TLS y por defecto habla con el backend por
   HTTP/1.1, lo que rompe gRPC. Hay que declarar el backend como **h2c**

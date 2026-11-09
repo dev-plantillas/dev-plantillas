@@ -37,8 +37,13 @@ docker login ghcr.io -u <usuario> --password-stdin
 2. **Dominio** del servicio `gateway` (p. ej. `https://api.qa.ejemplo.com`):
    Coolify configura Traefik y el certificado. El gateway es lo único con dominio.
 3. **Red**: activá *Connect to Predefined Network* en este recurso **y** en
-   el de cada servicio gRPC; así el gateway los resuelve por nombre de
-   contenedor. Los servicios no necesitan dominio ni puertos publicados.
+   el de cada servicio gRPC. En cada servicio gRPC activá además
+   *Consistent name* con un nombre propio (p. ej. `items-qa`): con el nombre
+   generado (rolling updates) el contenedor se llama
+   `<servicio>-<uuid>-<timestamp>` y en la red sólo tiene ese alias y el del
+   servicio (`app`), así que `<servicio>-<uuid>` **no resuelve**. Con nombre
+   propio queda `<servicio>-<nombre>` (`app-items-qa`), estable entre
+   deploys. Los servicios no necesitan dominio ni puertos publicados.
 4. Anotá el UUID del recurso (`COOLIFY_RESOURCE_UUID_QA` / `_PROD`).
 
 ## 3. Variables del recurso
@@ -46,7 +51,7 @@ docker login ghcr.io -u <usuario> --password-stdin
 | Variable | Ejemplo | Notas |
 |---|---|---|
 | `IMAGE_TAG` | `qa` / `prod` | Tag móvil. Rollback: un tag inmutable (`prod-v1.2.2`) + Redeploy |
-| `UPSTREAM_ITEMS_ADDR` | `<contenedor-del-servicio>:5000` | `docker ps` en el VPS muestra el nombre (incluye el UUID del recurso) |
+| `UPSTREAM_ITEMS_ADDR` | `app-items-qa:5000` | `<servicio>-<nombre>` del *Consistent name* del servicio (paso 2.3). Nunca el `<servicio>-<uuid>`: no resuelve |
 | `CORS_ALLOWED_ORIGINS` | `https://app.qa.ejemplo.com` | Orígenes exactos, separados por coma. Nunca `*` |
 {%- if a_fb %}
 | `FIREBASE_PROJECT_ID` | `{{ firebase_project }}` | El proyecto de Firebase de ESE entorno |
@@ -85,8 +90,12 @@ curl -s  https://api.qa.ejemplo.com/readyz           # {"status":"ok"} si llega 
 curl -s  https://api.qa.ejemplo.com/v1/items         # ruta pública de ejemplo
 ```
 
-`/readyz` en `unavailable`: revisar `UPSTREAM_*_ADDR` y que los dos recursos
-estén en la red predefinida (`docker network inspect coolify`).
+`/readyz` en `unavailable`: revisar `UPSTREAM_*_ADDR`, que el servicio tenga
+*Consistent name* y que los dos recursos estén en la red predefinida
+(`docker network inspect coolify` lista los alias de cada contenedor).
+
+El deploy de la CI es un `POST /api/v1/deploy?uuid=...`. Desde Coolify 4.6 un
+`GET` a esa ruta devuelve `405 Method Not Allowed`.
 
 ## Mudar a Cloud Run
 
