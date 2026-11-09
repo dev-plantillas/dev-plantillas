@@ -1,6 +1,6 @@
 {
-  "mcpServers": {
 {%- if tracker_mcp %}
+  "mcpServers": {
     "tracker": {
       "type": "http",
       "url": "${TRACKER_MCP_URL}",
@@ -8,6 +8,8 @@
         "Authorization": "Bearer ${TRACKER_TOKEN}"
       }
     }
-{%- endif %}
   }
+{%- else %}
+  "mcpServers": {}
+{%- endif %}
 }
