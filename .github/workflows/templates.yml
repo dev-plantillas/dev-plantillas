@@ -374,6 +374,20 @@ jobs:
   # Sitio público Astro: lint, astro check + build, test de SEO y de JSON-LD
   # (con las páginas SSR en híbrido) y Lighthouse CI con presupuestos. Con
   # coolify, además, la imagen sirve el sitio y da 404 real.
+  # Formato en todas las combinaciones de astro-site (48): sólo prettier, sin
+  # instalar el proyecto. La matriz de abajo compila unas pocas.
+  astro-site-formato:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install copier
+      - uses: actions/setup-node@v4
+        with: { node-version: "24" }
+      - name: prettier --check en cada combinación
+        run: bash .github/astro-site/formato.sh "$RUNNER_TEMP/formato"
+
   astro-site:
     name: astro-site (${{ matrix.render }}, ${{ matrix.idiomas }}, ${{ matrix.deploy }})
     runs-on: ubuntu-latest
@@ -384,6 +398,7 @@ jobs:
           - { render: estatico, idiomas: "[es]",     blog: true,  ent: false, analytics: plausible, ci: github, deploy: coolify }
           - { render: estatico, idiomas: "[es, en]", blog: true,  ent: true,  analytics: ga4,       ci: gitlab, deploy: firebase-hosting }
           - { render: hibrido,  idiomas: "[es, en]", blog: false, ent: true,  analytics: ninguna,   ci: github, deploy: cloud-run }
+          - { render: estatico, idiomas: "[es]",     blog: false, ent: false, analytics: ninguna,   ci: github, deploy: firebase-hosting }
     env:
       PUBLIC_ENTORNO: prod
       PUBLIC_API_FUENTE: mock
