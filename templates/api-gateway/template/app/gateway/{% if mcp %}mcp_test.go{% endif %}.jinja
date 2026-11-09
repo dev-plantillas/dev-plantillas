@@ -1,0 +1,156 @@
+package gateway_test
+
+// /mcp de punta a punta (docs/15 §10): un cliente MCP real (SDK oficial)
+// contra el gateway completo y el upstream falso.
+
+import (
+	"context"
+	"net/http"
+	"net/http/httptest"
+	"slices"
+	"strings"
+	"testing"
+
+	"github.com/modelcontextprotocol/go-sdk/mcp"
+
+	"{{ module_path }}/app/gateway"
+)
+
+func withMCP(o *gateway.Options) { o.MCP, o.Version = true, "test" }
+
+// headerTransport agrega la credencial a cada request del cliente MCP.
+type headerTransport struct{ name, value string }
+
+func (h headerTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	r = r.Clone(r.Context())
+	if h.name != "" {
+		r.Header.Set(h.name, h.value)
+	}
+	return http.DefaultTransport.RoundTrip(r)
+}
+
+func (e *env) mcpSession(name, value string) *mcp.ClientSession {
+	e.t.Helper()
+	srv := httptest.NewServer(e.h)
+	e.t.Cleanup(srv.Close)
+	client := mcp.NewClient(&mcp.Implementation{Name: "test", Version: "0"}, nil)
+	sess, err := client.Connect(context.Background(), &mcp.StreamableClientTransport{
+		Endpoint:   srv.URL + "/mcp",
+		HTTPClient: &http.Client{Transport: headerTransport{name, value}},
+	}, nil)
+	if err != nil {
+		e.t.Fatal(err)
+	}
+	e.t.Cleanup(func() { _ = sess.Close() })
+	return sess
+}
+
+func (e *env) callTool(sess *mcp.ClientSession, name string, args map[string]any) (*mcp.CallToolResult, string) {
+	e.t.Helper()
+	res, err := sess.CallTool(context.Background(), &mcp.CallToolParams{Name: name, Arguments: args})
+	if err != nil {
+		e.t.Fatal(err)
+	}
+	var text strings.Builder
+	for _, c := range res.Content {
+		if tc, ok := c.(*mcp.TextContent); ok {
+			text.WriteString(tc.Text)
+		}
+	}
+	return res, text.String()
+}
+
+func TestMCPHerramientas(t *testing.T) {
+	e := newEnv(t, nil, withMCP)
+	sess := e.mcpSession(e.creds.header("u-1"))
+	res, err := sess.ListTools(context.Background(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var names []string
+	for _, tool := range res.Tools {
+		names = append(names, tool.Name)
+		ro := tool.Annotations != nil && tool.Annotations.ReadOnlyHint
+		if want := tool.Name != "create_item"; ro != want {
+			t.Errorf("%s: readOnlyHint = %v", tool.Name, ro)
+		}
+	}
+	slices.Sort(names)
+	if strings.Join(names, ",") != "create_item,get_item,list_items" {
+		t.Fatalf("herramientas = %v", names)
+	}
+}
+
+func TestMCPSinCredencial(t *testing.T) {
+	e := newEnv(t, nil, withMCP)
+	init := `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"x","version":"0"}}}`
+	invalidName, invalidValue := e.creds.invalid()
+	for _, h := range []struct{ name, value string }{
+		{name: "", value: ""},
+		{name: invalidName, value: invalidValue},
+	} {
+		w := e.do(http.MethodPost, "/mcp", init, h.name, h.value, "Accept", "application/json, text/event-stream")
+		if w.Code != http.StatusUnauthorized {
+			t.Fatalf("credencial %q: status = %d, body = %s", h.name, w.Code, w.Body)
+		}
+	}
+	if _, _, calls := e.up.last(); calls != 0 {
+		t.Fatal("sin credencial no puede llegar nada al servicio")
+	}
+}
+
+func TestMCPLeerYEscribir(t *testing.T) {
+	e := newEnv(t, nil, withMCP)
+
+	read := e.mcpSession(e.creds.header("u-lector", "items.read"))
+	if res, text := e.callTool(read, "get_item", map[string]any{"id": "42"}); res.IsError {
+		t.Fatalf("get_item: %s", text)
+	}
+	method, md, _ := e.up.last()
+	if method != "/example.v1.ItemService/GetItem" || len(md.Get(gateway.MDUserID)) != 1 {
+		t.Fatalf("upstream: método %q, metadata %v", method, md)
+	}
+
+	// Alcance insuficiente: el lector no puede crear.
+	_, _, before := e.up.last()
+	res, text := e.callTool(read, "create_item", map[string]any{"name": "x"})
+	if !res.IsError || !strings.Contains(text, "PERMISSION_DENIED") {
+		t.Fatalf("create_item sin items.write: isError=%v %s", res.IsError, text)
+	}
+	if _, _, after := e.up.last(); after != before {
+		t.Fatal("una llamada sin permiso llegó al servicio")
+	}
+
+	write := e.mcpSession(e.creds.header("u-escritor", "items.write"))
+	if res, text := e.callTool(write, "create_item", map[string]any{"name": "x", "description": "y"}); res.IsError {
+		t.Fatalf("create_item: %s", text)
+	}
+	if method, _, _ := e.up.last(); method != "/example.v1.ItemService/CreateItem" {
+		t.Fatalf("upstream: método %q", method)
+	}
+	logs := e.logs.String()
+	if !strings.Contains(logs, `"msg":"mcp tool"`) || !strings.Contains(logs, `"tool":"create_item"`) || !strings.Contains(logs, `"user_id":`) {
+		t.Fatalf("falta la auditoría de la herramienta:\n%s", logs)
+	}
+}
+
+func TestMCPArgumentos(t *testing.T) {
+	e := newEnv(t, nil, withMCP)
+	sess := e.mcpSession(e.creds.header("u-1", "items.read"))
+	for name, args := range map[string]map[string]any{
+		"desconocido": {"id": "1", "extra": true},
+		"falta id":    {},
+	} {
+		res, text := e.callTool(sess, "get_item", args)
+		if !res.IsError || !strings.Contains(text, "INVALID_ARGUMENT") {
+			t.Errorf("%s: isError=%v %s", name, res.IsError, text)
+		}
+	}
+}
+
+func TestMCPApagado(t *testing.T) {
+	e := newEnv(t, nil)
+	if w := e.do(http.MethodPost, "/mcp", "{}"); w.Code != http.StatusNotFound {
+		t.Fatalf("sin MCP, /mcp = %d", w.Code)
+	}
+}

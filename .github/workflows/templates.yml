@@ -56,16 +56,16 @@ jobs:
         run: bash plugins/dev-agentes/skills/verificar/scripts/verify.sh "$RUNNER_TEMP/demo-service"
 
   api-gateway:
-    name: api-gateway (${{ matrix.auth }}, ${{ matrix.ci }}, ${{ matrix.deploy }})
+    name: api-gateway (${{ matrix.auth }}, ${{ matrix.ci }}, ${{ matrix.deploy }}, mcp=${{ matrix.mcp }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         include:
-          - { auth: firebase, ci: gitlab, deploy: cloud-run }
-          - { auth: oidc,     ci: github, deploy: coolify }
-          - { auth: api-key,  ci: gitlab, deploy: ninguno }
-          - { auth: ninguno,  ci: github, deploy: cloud-run }
+          - { auth: firebase, ci: gitlab, deploy: cloud-run, mcp: true }
+          - { auth: oidc,     ci: github, deploy: coolify,   mcp: false }
+          - { auth: api-key,  ci: gitlab, deploy: ninguno,   mcp: true }
+          - { auth: ninguno,  ci: github, deploy: cloud-run, mcp: false }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -73,7 +73,7 @@ jobs:
       - run: pip install copier
       - name: Generar
         run: |
-          copier copy --defaults --trust             -d auth=${{ matrix.auth }} -d ci_provider=${{ matrix.ci }}             -d deploy_target=${{ matrix.deploy }}             templates/api-gateway "$RUNNER_TEMP/gw"
+          copier copy --defaults --trust             -d auth=${{ matrix.auth }} -d ci_provider=${{ matrix.ci }}             -d deploy_target=${{ matrix.deploy }} -d mcp=${{ matrix.mcp }}             templates/api-gateway "$RUNNER_TEMP/gw"
       - uses: actions/setup-go@v5
         with:
           go-version-file: ${{ runner.temp }}/gw/go.mod

@@ -20,6 +20,9 @@ routes:
     public: true
   example.v1.ItemService/GetItem:
     roles: [items.read]
+    mcp:
+      tool: get_item
+      description: "  Lee un item por id.  "
   example.v1.ItemService/CreateItem:
     roles: [items.write]
     timeout: 2s
@@ -47,6 +50,10 @@ func TestParseValido(t *testing.T) {
 		create.RateLimit != (Rate{PerMinute: 6, Burst: 20}) || create.Sunset != "2030-01-31" {
 		t.Fatalf("overrides mal aplicados: %+v", create)
 	}
+	tools := tb.Tools()
+	if len(tools) != 1 || tools[0].MCP.Name != "get_item" || tools[0].MCP.Description != "Lee un item por id." {
+		t.Fatalf("Tools = %+v", tools)
+	}
 	if tb.Policy("example.v1.ItemService/Nada") != nil {
 		t.Fatal("un método sin entrada tiene que devolver nil (denegado)")
 	}
@@ -68,6 +75,11 @@ func TestParseInvalido(t *testing.T) {
 		"rate en cero":             "routes:\n  a.v1.S/M:\n    public: true\n    rate_limit: {per_minute: 0}\n",
 		"rol con espacios":         "routes:\n  a.v1.S/M:\n    roles: ['a b']\n",
 		"sunset mal":               "routes:\n  a.v1.S/M:\n    public: true\n    sunset: mañana\n",
+		"mcp sin descripción":      "routes:\n  a.v1.S/M:\n    public: true\n    mcp: {tool: list_x}\n",
+		"mcp tool camelCase":       "routes:\n  a.v1.S/M:\n    public: true\n    mcp: {tool: listX, description: d}\n",
+		"mcp con deny":             "routes:\n  a.v1.S/M:\n    deny: true\n    mcp: {tool: list_x, description: d}\n",
+		"mcp campo desconocido":    "routes:\n  a.v1.S/M:\n    public: true\n    mcp: {name: list_x, description: d}\n",
+		"mcp tool repetida":        "routes:\n  a.v1.S/M:\n    public: true\n    mcp: {tool: list_x, description: d}\n  a.v1.S/N:\n    public: true\n    mcp: {tool: list_x, description: d}\n",
 	}
 	for name, body := range cases {
 		if _, err := Parse([]byte("version: 1\n" + body)); err == nil {
