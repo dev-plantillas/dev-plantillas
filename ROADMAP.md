@@ -65,7 +65,7 @@ Leyenda: ✅ publicada · 🔨 en construcción · 📐 especificada · 💭 ide
 |---|---|
 | Base común fases 2–5: manifiesto `.dp/repo.yaml` + `sincronizar` en docs, Renovate, release-please, `dp repo proteger` | `docs/10` |
 | Repo `ci` y migración de las plantillas a CI compartido (`ci_modo`) | `docs/11` |
-| CLI `dp` H3–H10: `doctor`, catálogo remoto, workspace, issues, `update --all`, `--remoto`, mantenimiento de plantillas, skills sobre `dp --json` | `docs/08` |
+| CLI `dp` H3–H11: `doctor`, catálogo remoto, workspace, issues, `update --all`, `--remoto`, mantenimiento de plantillas, skills sobre `dp --json`, `dp agentes` | `docs/08` |
 | Gateway fase 2 (`protovalidate`, circuit breaker), fase 3 (Redis), fase 4 (GraphQL) | `docs/05` |
 | Observabilidad fases 2–4: métricas RED, SLOs y alertas, destino Google, front y móvil | `docs/14` |
 | `e2e-tests` disparada desde los deploys a QA (requiere `ci`) | `docs/12` |

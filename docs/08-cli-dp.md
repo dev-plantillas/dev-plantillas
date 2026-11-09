@@ -21,6 +21,7 @@ y revisión (ver §9).
 | `docs/workspace/bootstrap` y `new-worktree.ps1` (este, sólo Windows) | `dp workspace init` y `dp issue start 42` (cualquier sistema) |
 | Leer el issue para saber qué repos crear | `dp issue start` lee el frontmatter del issue |
 | `publish-template.sh` | `dp plantilla publicar` |
+| Preguntarle a cada sesión de agente en qué está y qué dejó sin pushear | `dp agentes` |
 
 ## 2. Decisiones técnicas
 
@@ -111,6 +112,43 @@ dicen y sugieren `dp workspace init`.
 | `dp issue start <n>` | Lee `repos` del issue y crea un worktree por repo en `worktrees/issue-<n>/` con la rama `feat/issue-<n>-<slug>`; pasa el estado a `en-curso`. Imprime dónde abrir la sesión |
 | `dp issue close <n>` | Verifica que no queden cambios sin commitear ni ramas sin pushear; quita los worktrees. No cambia el estado del issue (eso lo hace `/cerrar-issue` con la evidencia) |
 
+### Agentes y sesiones
+
+Lo que hoy junta la sesión `coord` preguntando por mensajes (`docs/03` §9),
+en un comando. Es **de sólo lectura**: no cierra sesiones, no borra
+worktrees ni ramas y no mata procesos (para limpiar está `dp issue close`).
+
+| Comando | Qué hace |
+|---|---|
+| `dp agentes [--estado esperando-ok] [--issue 42] [--mias] [--json]` | Tabla de sesiones: nombre, herramienta, máquina, carpeta, rama, issue, estado, último latido y resumen del último turno. Ordena primero lo que necesita a una persona: `esperando-ok`, `bloqueado`, `colgado` |
+| `dp agentes pendientes [--json]` | Lo que quedó sólo en esta máquina, repo por repo del workspace: ramas sin push, cambios sin commitear, worktrees de ramas ya mergeadas y worktrees rotos. Es el reporte de `docs/03` §9 sin preguntarle a nadie |
+
+**De dónde sale cada dato.**
+
+| Dato | Con tracker | Sin tracker |
+|---|---|---|
+| Sesiones y estado | Tracker, por MCP (`TRACKER_MCP_URL`, `TRACKER_TOKEN`, las mismas variables del `.mcp.json`, `docs/15` §4). Muestra las de todo el equipo; `--mias` filtra por el actor del token | No se puede saber. `dp agentes` lo dice y muestra sólo lo local: un worktree por fila, con su rama e issue |
+| Rama, issue, carpeta | Lo que reportaron los hooks (`docs/03` §6) | `git worktree list` en cada repo de `workspace.toml`; el issue sale de la rama (`feat/issue-<n>-…`) o de la carpeta (`worktrees/issue-<n>/`) |
+| Ramas sin push, cambios sin commit | Siempre locales (`git`), aunque haya tracker: el `pending` que manda `SessionEnd` es de cuando cerró la sesión, no de ahora | Igual |
+| Rama ya mergeada | `git branch --merged` contra la rama principal del remoto, después de `git fetch` (con `--offline`, sin fetch y lo avisa) | Igual |
+
+- Los procesos que una sesión levantó (`ng serve`, `astro preview`, un
+  `gcloud` colgado) **no aparecen**: no hay forma confiable de atribuírselos a
+  una sesión. Sigue valiendo la regla de `docs/03` §5.
+- Con tracker, una sesión cuya carpeta es de esta máquina y ya no existe se
+  marca `huérfana` (el tracker la cree viva y el worktree no está).
+- Si el tracker no responde, se muestra la parte local con un aviso y exit
+  `0`: es una vista, no una verificación.
+- `dp agentes pendientes` también avisa si el workspace está en una carpeta
+  sincronizada (mismo chequeo que `dp doctor`).
+
+**Lo que necesita del tracker.** Las herramientas del protocolo (`docs/03`
+§6) no incluyen hoy una que **liste sesiones**: `report_status` escribe, pero
+nada lee. `dp agentes` necesita sumar `list_sessions` (filtros `state`,
+`issue`, `actor`, `host`; devuelve los campos de `report_status` más
+`last_seen` y `actor`; permiso `allow` en `_base`). Hasta que el protocolo la
+tenga, `dp agentes` funciona en modo sin tracker.
+
 ### Mantenimiento de plantillas (para quien las mantiene)
 
 | Comando | Qué hace |
@@ -139,6 +177,7 @@ Las skills dejan de reimplementar lógica y llaman a `dp … --json`:
 | `/issue-start <n>` | `dp issue start <n> --json` |
 | `/cerrar-issue` | `dp issue close <n>` después de escribir la evidencia |
 | `/verificar` | Sin cambios (usa `verify.sh`) |
+| `/coordinar` | `dp agentes --json` y `dp agentes pendientes --json` en vez de preguntar sesión por sesión (`docs/03` §9); los mensajes quedan para avisar, no para relevar |
 
 `dp doctor` también revisa que el plugin esté instalado en Claude Code.
 
@@ -149,10 +188,12 @@ cli/
 ├── pyproject.toml              ← entry point `dp`, dependencias fijadas
 ├── src/dp/
 │   ├── main.py                 ← app Typer; registra los grupos de comandos
-│   ├── comandos/               ← un módulo por grupo: plantillas, workspace, issue, mantenimiento
+│   ├── comandos/               ← un módulo por grupo: plantillas, workspace, issue, agentes, mantenimiento
 │   ├── catalogo.py             ← lectura, caché, versiones por tags
 │   ├── workspace.py            ← buscar y leer/escribir .dp/workspace.toml
 │   ├── issues.py               ← frontmatter de docs
+│   ├── agentes.py              ← sesiones (tracker + worktrees locales) y pendientes
+│   ├── tracker.py              ← cliente MCP del tracker (`list_sessions`)
 │   ├── git.py                  ← envoltorio mínimo de git (subprocess, sin shell)
 │   ├── remoto.py               ← gh / glab
 │   └── salida.py               ← tablas Rich y modo --json
@@ -194,6 +235,7 @@ Reglas:
 | H8 | `dp new --remoto` | Claude | — |
 | H9 | `dp plantilla probar/publicar` + migrar el CI | Claude | — |
 | H10 | Skills del plugin sobre `dp --json`; borrar los scripts viejos | Claude | — |
+| H11 | `dp agentes` y `dp agentes pendientes`: primero sin tracker (sólo necesita H5), después con `list_sessions` | Pair | Juntar fuentes que pueden fallar y mostrar el resultado parcial |
 
 Cada hito es un issue y un PR, con su revisión. Al final de H2, `dp` ya sirve
 para el uso diario (`list` + `new`).
@@ -215,6 +257,11 @@ para el uso diario (`list` + `new`).
       `guard-worktree` permite editar dentro y bloquea fuera.
 - [ ] `dp doctor` dentro de OneDrive avisa del problema; sin `gh` instalado lo
       reporta con exit 2 y cómo instalarlo.
+- [ ] En un workspace con un worktree con commits sin push y otro de una
+      rama ya mergeada, `dp agentes pendientes` lista los dos, no cambia nada
+      y sale con `0`. Sin tracker, `dp agentes` muestra los worktrees y avisa
+      que el estado de las sesiones no está disponible; con un tracker falso
+      que responde `list_sessions`, ordena primero las `esperando-ok`.
 - [ ] `dp plantilla probar` reemplaza los pasos repetidos del CI de
       `dev-plantillas`.
 - [ ] Tests en verde en Windows y Ubuntu; cobertura de la lógica ≥ 80 %.
