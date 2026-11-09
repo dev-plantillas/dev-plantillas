@@ -5,7 +5,7 @@
 #
 # Equivalente GitHub Actions del modelo GitLab de la plantilla:
 #
-#   - Pull request   -> solo `test` (sin deploy).
+#   - Pull request   -> `test` y `govulncheck` (sin deploy).
 #   - Tag qa-v*      -> test + build + deploy a QA.
 #   - Tag prod-v*    -> test + guard + build + deploy a prod, SALVO que el
 #                       release toque `migrations/`: `guard-prod` falla y el
@@ -28,7 +28,7 @@
 # disparado por tag
 # =============================================================================
 #
-#   - Pull request   -> solo `test` (sin deploy).
+#   - Pull request   -> `test` y `govulncheck` (sin deploy).
 #   - Tag qa-v*      -> test y build de la imagen (en paralelo) + push + deploy a QA.
 #   - Tag prod-v*    -> test + guard + build + push + deploy a prod, SALVO que
 #                       el release toque `migrations/`: `guard-prod` falla y el
@@ -80,6 +80,7 @@ permissions:
 
 env:
   GO_VERSION: "{{ go_version }}"
+  GOVULNCHECK_VERSION: v1.8.0
   GOWORK: "off"
 {%- if protos_module %}
   GOPRIVATE: "{{ protos_module }}"
@@ -150,6 +151,41 @@ jobs:
             go.sum
           retention-days: 1
 {%- endif %}
+
+  # ---------------------------------------------------------------------------
+  # GOVULNCHECK: vulnerabilidades ALCANZABLES en dependencias y stdlib. Corre
+  # en paralelo con test; el deploy lo espera.
+  # ---------------------------------------------------------------------------
+  govulncheck:
+    runs-on: ubuntu-latest
+    steps:
+{%- if has_cd %}
+{%- raw %}
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+{%- endraw %}
+{%- else %}
+      - uses: actions/checkout@v4
+{%- endif %}
+{%- raw %}
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+{%- endraw %}
+{%- if protos_module %}
+{%- raw %}
+
+      - name: Acceso al módulo privado de protos
+        env:
+          PROTOS_TOKEN: ${{ secrets.PROTOS_TOKEN }}
+{%- endraw %}
+        run: git config --global url."https://x-access-token:${PROTOS_TOKEN}@{{ protos_module.split('/')[0] }}/".insteadOf "https://{{ protos_module.split('/')[0] }}/"
+{%- endif %}
+
+      - name: govulncheck
+        run: go run "golang.org/x/vuln/cmd/govulncheck@${GOVULNCHECK_VERSION}" ./...
 {%- if is_cy %}
 {%- raw %}
 
@@ -240,7 +276,7 @@ jobs:
   release-qa:
     if: github.event_name == 'push' && startsWith(github.ref_name, 'qa-v')
 {%- endraw %}
-    needs: {{ '[test, image]' if is_cy else 'test' }}
+    needs: {{ '[test, govulncheck, image]' if is_cy else '[test, govulncheck]' }}
     permissions:
       contents: read
 {%- if is_cr %}
@@ -259,7 +295,7 @@ jobs:
 
   release-prod:
     if: github.event_name == 'push' && startsWith(github.ref_name, 'prod-v')
-    needs: {{ '[test, image, guard-prod]' if is_cy else '[test, guard-prod]' }}
+    needs: {{ '[test, govulncheck, image, guard-prod]' if is_cy else '[test, govulncheck, guard-prod]' }}
     permissions:
       contents: read
 {%- if is_cr %}
@@ -280,7 +316,7 @@ jobs:
   # environment `prod` (Settings > Environments).
   release-prod-override:
     if: github.event_name == 'workflow_dispatch'
-    needs: {{ '[test, image]' if is_cy else 'test' }}
+    needs: {{ '[test, govulncheck, image]' if is_cy else '[test, govulncheck]' }}
     permissions:
       contents: read
 {%- if is_cr %}

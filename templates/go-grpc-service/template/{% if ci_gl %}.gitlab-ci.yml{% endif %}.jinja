@@ -11,7 +11,7 @@
 # ({{ repo_name }}-qa vs {{ repo_name }}) y el cloudrun.<env>.yaml.
 #
 # Disparo:
-#   - Merge request  -> solo el stage `test` (sin deploy).
+#   - Merge request  -> solo el stage `test` (tests + govulncheck, sin deploy).
 #   - Tag qa-v*      -> build + deploy a QA, automático.
 #   - Tag prod-v*    -> build + deploy a prod automático, SALVO que el release
 #                       toque `migrations/`: ahí `guard:prod` falla, el deploy
@@ -51,7 +51,7 @@
 # =============================================================================
 #
 # Disparo:
-#   - Merge request  -> solo el stage `test` (sin deploy).
+#   - Merge request  -> solo el stage `test` (tests + govulncheck, sin deploy).
 #   - Tag qa-v*      -> build + push + deploy a QA, automático.
 #   - Tag prod-v*    -> build + push + deploy a prod automático, SALVO que el
 #                       release toque `migrations/`: ahí `guard:prod` falla, el
@@ -121,6 +121,7 @@ variables:
   IMAGE_NAME: {{ repo_name }}
 {%- endif %}
   GO_IMAGE: golang:{{ go_version }}
+  GOVULNCHECK_VERSION: v1.8.0
   # go.work es una herramienta local (ver `make workspace`). GOWORK=off
   # garantiza que CI compile contra lo publicado y verificado por go.sum.
   GOWORK: "off"
@@ -178,6 +179,18 @@ test:
       - go.sum
     expire_in: 1 hour
 {%- endif %}
+
+# Vulnerabilidades ALCANZABLES en dependencias y stdlib. Corre en paralelo con
+# test; los releases lo esperan.
+govulncheck:
+  stage: test
+  image: $GO_IMAGE
+{%- if protos_module %}
+  before_script:
+    - git config --global url."https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/".insteadOf "https://${CI_SERVER_HOST}/"
+{%- endif %}
+  script:
+    - go run "golang.org/x/vuln/cmd/govulncheck@${GOVULNCHECK_VERSION}" ./...
 {%- if is_cr %}
 
 # -----------------------------------------------------------------------------
@@ -188,6 +201,7 @@ test:
   image: google/cloud-sdk:slim
   needs:
     - test
+    - govulncheck
   id_tokens:
     GCP_ID_TOKEN:
       aud: "$GCP_WIF_AUD"
@@ -260,6 +274,7 @@ release:qa:
     - docker:27-dind
   needs:
     - test
+    - govulncheck
   variables:
     DOCKER_BUILDKIT: "1"
     DOCKER_TLS_CERTDIR: "/certs"
@@ -351,6 +366,7 @@ release:prod:
   extends: .release
   needs:
     - test
+    - govulncheck
     - guard:prod
   variables:
 {%- if is_cr %}
