@@ -1,7 +1,7 @@
 {
   "name": "dev-agentes",
-  "version": "0.1.0",
-  "description": "Flujo de trabajo con agentes para proyectos generados con dev-plantillas: verificación, issues y worktrees, revisores por stack.",
+  "version": "0.2.0",
+  "description": "Flujo de trabajo con agentes para proyectos generados con dev-plantillas: verificación, worktrees por issue y estado de cada sesión en el tracker.",
   "author": {
     "name": "Victor Rojas Barrera",
     "url": "https://github.com/vrojas1015"

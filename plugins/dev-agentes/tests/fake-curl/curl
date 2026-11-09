@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# curl falso para los tests de estado.sh: anota cada request en $FAKE_CURL_LOG
+# (una línea por request: "<Mcp-Session-Id recibido>|<Authorization>|<cuerpo>")
+# y responde como un servidor MCP con sesión.
+#   FAKE_CURL_STATUS=500  todas las respuestas con ese status
+out=/dev/null hdr=/dev/null data= auth= sid=
+while [ $# -gt 0 ]; do
+  case $1 in
+    -o) out=$2; shift ;;
+    -D) hdr=$2; shift ;;
+    --data-binary) data=$2; shift ;;
+    -H)
+      case $2 in
+        Authorization:*) auth=${2#Authorization: } ;;
+        Mcp-Session-Id:*) sid=${2#Mcp-Session-Id: } ;;
+      esac
+      shift
+      ;;
+    -w | -X | --max-time) shift ;;
+  esac
+  shift
+done
+printf '%s|%s|%s\n' "$sid" "$auth" "$data" >>"$FAKE_CURL_LOG"
+status=${FAKE_CURL_STATUS:-200}
+case $data in
+  *'"initialize"'*) body='{"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2025-06-18"}}'
+    printf 'HTTP/1.1 %s\r\nMcp-Session-Id: s-123\r\n\r\n' "$status" >"$hdr" ;;
+  *'notifications/'*) body= ; [ "$status" = 200 ] && status=202; : >"$hdr" ;;
+  *) body='{"jsonrpc":"2.0","id":2,"result":{"content":[{"type":"text","text":"ok"}]}}'; : >"$hdr" ;;
+esac
+[ "${FAKE_CURL_STATUS:-200}" = 200 ] || body='{"error":"boom"}'
+printf '%s' "$body" >"$out"
+printf '%s' "$status"
