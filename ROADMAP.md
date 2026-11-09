@@ -11,14 +11,14 @@ Leyenda: ✅ publicada · 🔨 en construcción · 📐 especificada · 💭 ide
 
 | Plantilla | Estado | Versión | Spec |
 |---|---|---|---|
-| `go-grpc-service` | ✅ | v0.3.0 | `docs/04` |
-| `protos` | ✅ | v0.3.0 | — |
-| `api-gateway` (fase 1) | ✅ | v0.2.0 | `docs/05` |
-| `angular-app` | ✅ | v0.3.0 | `docs/07` |
-| `docs` | ✅ | v0.3.0 | `docs/06` |
-| `astro-site` | ✅ | v0.2.0 | `docs/07` |
-| `android-app` | ✅ | v0.2.0 | `docs/09` |
-| `e2e-tests` | ✅ | v0.2.0 | `docs/12` |
+| `go-grpc-service` | ✅ | v0.3.1 | `docs/04` |
+| `protos` | ✅ | v0.3.1 | — |
+| `api-gateway` (fase 1) | ✅ | v0.2.1 | `docs/05` |
+| `angular-app` | ✅ | v0.4.0 | `docs/07` |
+| `docs` | ✅ | v0.4.0 | `docs/06` |
+| `astro-site` | ✅ | v0.3.0 | `docs/07` |
+| `android-app` | ✅ | v0.2.1 | `docs/09` |
+| `e2e-tests` | ✅ | v0.2.1 | `docs/12` |
 | `api-gateway` con MCP (`mcp: true`) | 📐 | — | `docs/15` |
 | `observabilidad-stack` | 📐 | — | `docs/14` |
 | `react-app` | 📐 | — | `docs/07`, `docs/13` |
