@@ -1,43 +1,54 @@
 # Estructura de carpetas del equipo
 
 Todos los integrantes clonan los repos con **la misma estructura y los mismos
-nombres**. Así los `CLAUDE.md`, los scripts (`make workspace`, `../protos`) y
-las rutas que se pasan entre sesiones funcionan en cualquier máquina.
+nombres**. Así los `AGENTS.md` / `CLAUDE.md`, los scripts (`make workspace`,
+`../protos`) y las rutas que se pasan entre sesiones funcionan en cualquier
+máquina.
 
-## Dónde vive
+## Dónde vive: la raíz del workspace
 
-| Sistema | Raíz |
+El **workspace** es la carpeta que contiene `docs/`, `backend/`, `frontend/` y
+`worktrees/`. Cada persona elige dónde ponerlo:
+
+| Sistema | Raíz recomendada |
 |---|---|
-| Windows | `C:\dev\<org>\` |
-| macOS / Linux | `~/dev/<org>/` |
+| Windows | `C:/dev/<org>` |
+| macOS / Linux | `~/dev/<org>` |
+
+**Todas las rutas de la documentación, de los `AGENTS.md` y de los mensajes
+entre sesiones son relativas a la raíz, con `/`** (`backend/<repo>`,
+`docs/contenido/issues/`, `worktrees/issue-<n>/<repo>`). Nunca rutas absolutas
+de una máquina: el equipo crece y cada persona tiene otra raíz u otro sistema
+operativo. La raíz se define una sola vez, en el `AGENTS.md` de plataforma.
 
 **Nunca dentro de OneDrive, Dropbox ni iCloud.** La sincronización bloquea archivos
-mientras git o los agentes escriben, corrompe `.git` y sube `node_modules` y
-`vendor/`. El respaldo del código es el remoto (GitLab/GitHub), no la nube del
-sistema operativo.
+mientras git o los agentes escriben, corrompe `.git`, deja carpetas de sólo
+lectura que git no puede borrar y sube `node_modules`, `vendor/`, `.env` y
+credenciales. El respaldo del código es el remoto (GitLab/GitHub), no la nube
+del sistema operativo. Los scripts de `bootstrap` se niegan a correr ahí.
 
 ## Layout
 
-```
-C:\dev\<org>\
-├── CLAUDE.md                 ← reglas de toda la plataforma (no es un repo; ver abajo)
-├── backend\
-│   ├── CLAUDE.md             ← convenciones comunes del backend
-│   ├── protos\               ← contratos (repo <org>/protos)
-│   ├── api-gateway\
-│   ├── <dominio>-service\    ← un repo por micro
+```text
+<raíz>/
+├── CLAUDE.md, AGENTS.md      ← reglas de toda la plataforma (generados; ver abajo)
+├── docs/                     ← repo de documentación (plantilla docs): issues en
+│                               contenido/issues/<n>-<slug>/, ADRs, runbooks y
+│                               workspace/ (capas de plataforma y bootstrap)
+├── backend/
+│   ├── CLAUDE.md, AGENTS.md  ← convenciones comunes del backend (generados)
+│   ├── protos/               ← contratos (repo <org>/protos)
+│   ├── api-gateway/
+│   ├── <dominio>-service/    ← un repo por micro
 │   └── ...
-├── frontend\
-│   ├── CLAUDE.md             ← convenciones comunes del front
-│   └── <app>\                ← un repo por app (admin, landing, ...)
-├── docs\                     ← repo de documentación (plantilla docs): issues en
-│                               contenido\issues\<n>-<slug>\, ADRs, runbooks
-├── tools\                    ← scripts y migraciones de datos (repo propio)
-├── plantillas\               ← este repo (dev-plantillas)
-└── worktrees\                ← worktrees de agentes, uno por issue (ver abajo)
-    └── issue-42\
-        ├── orders-service\
-        └── api-gateway\
+├── frontend/
+│   ├── CLAUDE.md, AGENTS.md  ← convenciones comunes del front (generados)
+│   └── <app>/                ← un repo por app (admin, landing, ...)
+├── tools/                    ← scripts y migraciones de datos (repo propio)
+└── worktrees/                ← worktrees de agentes, uno por issue (ver abajo)
+    └── issue-42/
+        ├── orders-service/
+        └── api-gateway/
 ```
 
 ### Reglas
@@ -48,39 +59,64 @@ C:\dev\<org>\
    dentro del árbol: si hace falta una versión vieja se usa `git worktree` o un tag.
 3. **La copia principal de cada repo se queda en `main` y limpia.** Nadie (ni
    humano ni agente) trabaja features ahí; sirve para leer y para crear worktrees.
-4. **El trabajo vive en `worktrees\issue-<n>\`.** Un issue que toca tres repos
+4. **El trabajo vive en `worktrees/issue-<n>/`.** Un issue que toca tres repos
    tiene tres worktrees bajo la misma carpeta. Al cerrar el issue se borra la
    carpeta entera (`git worktree remove`).
-5. **Nada de archivos sueltos en la raíz** (PDFs, Excel, prompts). Van a `docs\`
-   o a `tools\` según corresponda.
+5. **Nada de archivos sueltos en la raíz** (PDFs, Excel, prompts). Van a `docs/`
+   o a `tools/` según corresponda.
 
 ## Contexto para agentes (`AGENTS.md` y `CLAUDE.md` en capas)
 
 Claude Code lee el `CLAUDE.md` del directorio donde arranca **y el de cada carpeta
 padre**; Codex y otras herramientas hacen lo mismo con `AGENTS.md`. Se aprovecha
 para no repetir reglas. En cada nivel, **`AGENTS.md` es la fuente** y `CLAUDE.md`
-lo importa (`@AGENTS.md` en la primera línea) y agrega sólo lo propio de Claude
-Code (`docs/03` §8). La tabla vale para los dos archivos:
+lo importa y agrega sólo lo propio de Claude Code (`docs/03` §8):
 
 | Nivel | Contiene | Tamaño guía |
 |---|---|---|
-| `<org>\CLAUDE.md` | Mapa de repos, flujo de issues, nombres de ramas y commits, dónde está la doc | ≤ 150 líneas |
-| `backend\CLAUDE.md` | Arquitectura hexagonal, errores, tests, protos, deploy | ≤ 200 líneas |
-| `frontend\CLAUDE.md` | Stack, estructura de `src/app`, estilos, cómo pedir endpoints | ≤ 150 líneas |
-| `<repo>\CLAUDE.md` | Sólo lo propio del repo: puerto, schema, dependencias, particularidades | ≤ 200 líneas |
+| `<raíz>/` | Mapa de repos, flujo de issues, nombres de ramas y commits, qué despliega, dónde está la doc | ≤ 150 líneas |
+| `backend/` | Arquitectura hexagonal, errores, tests, protos, deploy | ≤ 200 líneas |
+| `frontend/` | Stack, estructura de `src/app`, estilos, cómo pedir endpoints | ≤ 150 líneas |
+| `<repo>/` | Sólo lo propio del repo: puerto, schema, dependencias, particularidades | ≤ 200 líneas |
 
-Los `AGENTS.md` / `CLAUDE.md` de nivel `<org>`, `backend` y `frontend` no están en ningún repo.
-Se versionan en `plantillas\workspace\` y se copian con `scripts\bootstrap`.
-En un workspace armado antes de `AGENTS.md`, `bootstrap` no pisa los
-`CLAUDE.md` existentes: renombrarlos a `AGENTS.md` a mano y crear cada
-`CLAUDE.md` con la línea `@AGENTS.md`.
+**Dónde se versionan:** los de cada repo, en el repo (la plantilla trae su
+`AGENTS.md` y la base común su `CLAUDE.md`, `docs/10` §11). Los de la raíz,
+`backend/` y `frontend/` no son de ningún repo de código: viven en el **repo de
+documentación**, en `docs/workspace/` (lo trae la plantilla `docs`), porque todo
+el equipo ya lo clona. `docs/workspace/bootstrap` los aplica:
+
+- En la raíz, `backend/` y `frontend/` escribe un `CLAUDE.md` de una línea que
+  **importa** la fuente (`@docs/workspace/CLAUDE.md`,
+  `@../docs/workspace/backend/AGENTS.md`): un `git pull` de `docs` alcanza para
+  que Claude Code vea el cambio.
+- Escribe al lado un `AGENTS.md` que es una **copia** con el aviso «generado, no
+  editar», para las herramientas que no siguen imports (Codex). Se refresca
+  corriendo `bootstrap` de nuevo.
+- Los archivos de la raíz no se editan a mano: se cambian en `docs/workspace/`
+  con un MR/PR.
 
 Lo que **no** va en un `AGENTS.md` ni en un `CLAUDE.md`: historial de incidentes, decisiones con su
-contexto (→ ADR en `docs\`), changelogs, notas de un issue (→ el issue).
+contexto (→ ADR en `docs/`), changelogs, notas de un issue (→ el issue).
 
 ## Arranque de una máquina nueva
 
+Se clona el repo de documentación en `<raíz>/docs` y se corre su `bootstrap`,
+que crea las carpetas, clona los repos de `docs/workspace/repos.txt` y genera
+los archivos de contexto. Es idempotente.
+
 ```powershell
-git clone <url>/dev-plantillas C:\dev\<org>\plantillas
-C:\dev\<org>\plantillas\scripts\bootstrap.ps1 -Org <org>   # crea carpetas, copia CLAUDE.md, clona repos
+# Windows
+git clone <url>/docs.git C:\dev\<org>\docs
+C:\dev\<org>\docs\workspace\bootstrap.ps1
 ```
+
+```bash
+# macOS / Linux (o Git Bash)
+git clone <url>/docs.git ~/dev/<org>/docs
+bash ~/dev/<org>/docs/workspace/bootstrap.sh
+```
+
+**Workspace armado con la versión anterior** (capas copiadas desde
+`dev-plantillas/workspace/` con `scripts/bootstrap.ps1`): pasar el contenido
+propio de los `CLAUDE.md` de la raíz, `backend/` y `frontend/` a
+`docs/workspace/` (con un MR/PR) y correr `bootstrap`, que los reemplaza.

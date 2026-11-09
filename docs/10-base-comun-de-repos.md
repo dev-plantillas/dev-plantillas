@@ -198,7 +198,7 @@ issue dice por qué es sólo de ese proyecto. Así los proyectos no se desactual
 entre sí y los demás lo reciben con `copier update`. Las dos últimas casillas del
 checklist (avance del issue en `docs` con su PR abierto al mismo tiempo que el de
 código, y el PR en `dev-plantillas`) lo hacen visible en cada revisión; la sección
-«Terminado significa» de `workspace/CLAUDE.md` pide lo mismo a los agentes.
+«Terminado significa» del `AGENTS.md` de plataforma (`docs/workspace/` de la plantilla `docs`) pide lo mismo a los agentes.
 
 ## 9. Fases
 

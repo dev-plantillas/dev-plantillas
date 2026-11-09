@@ -1,0 +1,8 @@
+# Repos del workspace que clona bootstrap. Formato: <carpeta> <url-git>
+# Carpetas relativas a la raíz del workspace. Líneas con # se ignoran.
+# Revisar las URLs (grupos de GitLab, SSH o HTTPS). Un repo nuevo se agrega
+# acá y al mapa de AGENTS.md en el mismo MR/PR.
+{{ 'docs'.ljust(25) }} {{ docs_repo or (url_org ~ '/docs') }}.git
+{%- for repo in repos_iniciales %}
+{{ (('frontend/' if tipos_repo[repo] == 'front' else 'backend/') ~ repo).ljust(25) }} {{ url_org }}/{{ repo }}.git
+{%- endfor %}

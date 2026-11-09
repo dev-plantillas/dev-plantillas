@@ -15,17 +15,19 @@ Las §1–§3 y §9–§10 son la forma de trabajo vigente. Las §4–§8 son
 issue  →  worktrees  →  sesión  →  verificar  →  MR  →  cerrar
 ```
 
-1. **Issue** en `docs\contenido\issues\<n>-<slug>\` (`issue.md` y, si cruza
+1. **Issue** en `docs/contenido/issues/<n>-<slug>/` (`issue.md` y, si cruza
    repos, `plan.md`): qué, por qué, criterios de aceptación, repos afectados.
    Con tracker, el issue también existe ahí y se liga con `tracker: <KEY>-<n>`
    en el frontmatter (`docs/06` §4).
-2. **Worktrees**, uno por repo que toca, todos bajo `worktrees\issue-<n>\`:
-   ```powershell
-   cd C:\dev\<org>
-   .\plantillas\scripts\new-worktree.ps1 -Issue 42 -Slug descuentos `
-       -Repos backend\protos,backend\orders-service,backend\api-gateway
+2. **Worktrees**, uno por repo que toca, todos bajo `worktrees/issue-<n>/`.
+   Desde la raíz del workspace (`docs/01`):
+   ```bash
+   git -C backend/orders-service worktree add ../../worktrees/issue-42/orders-service \
+       -b feat/issue-42-descuentos origin/main
    ```
-3. **Una sesión de agente** abierta en `worktrees\issue-42\`, con nombre
+   `scripts/new-worktree.ps1` de dev-plantillas hace lo mismo para varios repos
+   (y `dp issue start 42` lo reemplaza, `docs/08`).
+3. **Una sesión de agente** abierta en `worktrees/issue-42/`, con nombre
    `issue-42`. La sesión ve todos los repos del issue y lee los `AGENTS.md` /
    `CLAUDE.md` de la plataforma por herencia de carpetas (§8).
 4. **Plan antes de código** en cambios que cruzan repos o tocan migraciones
@@ -33,7 +35,7 @@ issue  →  worktrees  →  sesión  →  verificar  →  MR  →  cerrar
 5. **Verificar**: `/verificar`, tests, build, `/code-review`. La evidencia se
    anota en el issue.
 6. **MR por repo**, con el template. El MR de protos se mergea y se taggea primero.
-7. **Cerrar**: `git worktree remove` de cada repo, borrar `worktrees\issue-<n>`
+7. **Cerrar**: `git worktree remove` de cada repo, borrar `worktrees/issue-<n>`
    y cerrar la sesión.
 
 ## 2. Actores
@@ -54,12 +56,12 @@ dueño.
 
 | Tipo | Dónde se abre | Edita | Nombre |
 |---|---|---|---|
-| **Issue** (por defecto) | `worktrees\issue-<n>\` | Sólo su worktree y la carpeta de su issue en `docs` | `issue-<n>` |
+| **Issue** (por defecto) | `worktrees/issue-<n>/` | Sólo su worktree y la carpeta de su issue en `docs` | `issue-<n>` |
 | **Revisión** | El worktree o el diff del MR | Nunca | `review-<n>` |
-| **Coordinación** | `C:\dev\<org>\` | Sólo archivos de plataforma (planes, migraciones de carpetas, limpieza) | `coord` |
+| **Coordinación** | La raíz del workspace | Sólo archivos de plataforma (planes, migraciones de carpetas, limpieza) | `coord` |
 
 **Anti-patrón: la sesión de larga vida por repo.** Una sesión abierta semanas
-en `backend\<repo>` acumula contexto de muchos issues, trabaja en la copia
+en `backend/<repo>` acumula contexto de muchos issues, trabaja en la copia
 principal, deja ramas locales "esperando OK", archivos sin commit que después
 nadie reconoce y procesos corriendo. Si un repo necesita una sesión de
 mantenimiento, se abre como sesión de issue sobre un issue de mantenimiento y
@@ -89,8 +91,25 @@ nadie lo ve. Es la primera alerta que se implementa (§12).
 | Los archivos agregados (índices, rollout) los actualiza una persona o un job | Mismo motivo |
 | **Nada queda sólo local:** lo que espera aprobación va en un MR en borrador | Una rama sin push se pierde con el disco y nadie más la ve |
 | **Lo que la sesión levanta, la sesión lo baja** (servidores de desarrollo, contenedores, comandos largos) | Un `ng serve` o un `gcloud` colgado bloquea archivos y puertos días después |
-| Prod, migraciones y tags `prod-v*` los hace una persona | Responsabilidad y reversibilidad |
-| El código vive en `C:\dev\<org>\`, nunca en OneDrive ni similares (`docs/01`) | La sincronización bloquea `.git` y deja carpetas de sólo lectura que git no puede borrar |
+| Lo que despliega, las migraciones a prod y los tags los hace una persona (tabla de abajo) | Responsabilidad y reversibilidad |
+| El código vive en el workspace (`docs/01`), nunca en OneDrive ni similares | La sincronización bloquea `.git` y deja carpetas de sólo lectura que git no puede borrar |
+| Rutas relativas a la raíz del workspace, con `/`, en docs, `AGENTS.md` y mensajes entre sesiones | Cada persona tiene otra raíz u otro sistema operativo |
+
+**Acciones que despliegan.** Un agente no las hace nunca, ni siquiera como paso
+"obvio" de otra tarea: propone el comando y lo corre una persona. Push a una
+rama de feature y abrir un MR/PR no despliegan en ninguna plantilla.
+
+| Acción | Qué despliega | Dónde (según la plantilla y su `deploy_target`) |
+|---|---|---|
+| Push de un tag `prod-v*` | **Producción** | `go-grpc-service` y `api-gateway` (automático salvo migraciones pendientes); `angular-app` y `astro-site` con Coolify o Cloud Run; `android-app` (pista interna de prod y producción escalonada con aprobación) |
+| Push o merge a `main` | **Producción** | `angular-app` y `astro-site` con Firebase Hosting; el sitio del repo `docs` |
+| Push de un tag `qa-v*` | QA | Todas las que despliegan (en `android-app`, la pista interna de QA) |
+| Push de un tag `v*` | Publica paquetes de contratos que otros consumen | `protos` |
+| `workflow_dispatch` / pipeline manual de e2e | Pruebas contra un ambiente (`@smoke` en prod) | `e2e-tests` |
+| Comandos de deploy o rollback locales (`npm run deploy:*`, `scripts/rollback.sh`, API de Coolify) | El ambiente que apunten | Fallback de emergencia; sólo personas |
+
+Cada repo generado lo repite en la sección «Deploy» de su `AGENTS.md`, y el
+`AGENTS.md` de plataforma lo resume para el proyecto.
 
 ## 6. El tracker
 
@@ -104,7 +123,7 @@ Lo que el tracker sabe de cada sesión:
 |---|---|
 | Actor dueño | La persona que abrió la sesión |
 | Herramienta | `claude-code`, `codex`, `cloud` |
-| Máquina y carpeta | `PC-01`, `C:\dev\round\worktrees\issue-231` |
+| Máquina y carpeta | `PC-01`, `worktrees/issue-231` (relativa a la raíz) |
 | Rama e issue | `feat/issue-231-autorizacion` → `RND-231` |
 | Estado y último latido | `esperando-ok`, hace 3 min |
 | Resumen del último turno | Una o dos líneas, que escribe el hook `Stop` |
@@ -171,7 +190,10 @@ no mantener dos textos:
   (mismo layout y mismos límites de tamaño que `docs/01`).
 - **`CLAUDE.md` importa `AGENTS.md`** (`@AGENTS.md` en la primera línea) y
   agrega sólo lo propio de Claude Code (skills, hooks, permisos).
-- `workspace/` y `_base` generan los dos archivos.
+- En cada repo, la plantilla trae `AGENTS.md` y la base común (`_base`) el
+  `CLAUDE.md`. En la raíz, `backend/` y `frontend/`, la fuente vive en el repo
+  de documentación (`docs/workspace/`) y `bootstrap` escribe `CLAUDE.md` con un
+  import y `AGENTS.md` como copia (`docs/01`).
 
 ## 9. Coordinar varias sesiones
 
@@ -206,7 +228,8 @@ mensajes entre sesiones (`/coordinar`).
 2. `copier copy` desde la plantilla (ver `02-repositorios-gitlab-github.md` §6).
 3. Crear el repo remoto y aplicar la configuración obligatoria (`docs/02` §4).
 4. Infra de una vez: `docs/ci-cd-setup.md` del repo generado.
-5. Agregarlo a `workspace\repos.txt` para que el resto del equipo lo clone.
+5. Agregarlo a `docs/workspace/repos.txt` y al mapa del `AGENTS.md` de
+   plataforma (mismo MR/PR) para que el resto del equipo lo clone.
 
 ## 12. Decisiones abiertas y fases
 
@@ -219,9 +242,9 @@ mensajes entre sesiones (`/coordinar`).
 
 **Fases**
 
-1. **Forma de trabajo:** este documento aprobado, `AGENTS.md` en `workspace/` y
-   en cada plantilla, `CLAUDE.md` con `@AGENTS.md` desde `_base`. 🔨 construida,
-   falta publicar.
+1. **Forma de trabajo:** este documento aprobado, `AGENTS.md` en cada plantilla
+   y en `docs/workspace/`, `CLAUDE.md` con `@AGENTS.md` desde `_base`. 🔨
+   construida, falta publicar.
 2. **Estado visible:** tracker con sesiones y estados; hooks `SessionStart`,
    `UserPromptSubmit`, `Notification`, `Stop`, `SessionEnd`; aviso de `esperando-ok`.
 3. **Trabajo asignado:** `claim`/`release`, `/issue-start`, `/cerrar-issue`, `next_issue`.
