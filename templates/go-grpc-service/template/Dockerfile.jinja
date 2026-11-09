@@ -2,9 +2,8 @@
 ###############################################################################
 # {{ repo_name }} — MULTI-STAGE DOCKERFILE (vendor)
 ###############################################################################
-# vendor/ lo genera el stage `test` de la pipeline (`go mod vendor`, que es
-# donde hay credenciales para módulos privados) y viaja como artifact al stage
-# de release. Este build NO toca la red para resolver dependencias.
+# vendor/ lo genera la pipeline antes del build (`go mod vendor`, que es
+# donde hay credenciales para módulos privados). Este build NO toca la red para resolver dependencias.
 #
 # Para un build local: `go mod vendor && docker build .` (y borrar vendor/ después).
 

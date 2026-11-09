@@ -29,7 +29,7 @@
 # =============================================================================
 #
 #   - Pull request   -> solo `test` (sin deploy).
-#   - Tag qa-v*      -> test + build + push + deploy a QA.
+#   - Tag qa-v*      -> test y build de la imagen (en paralelo) + push + deploy a QA.
 #   - Tag prod-v*    -> test + guard + build + push + deploy a prod, SALVO que
 #                       el release toque `migrations/`: `guard-prod` falla y el
 #                       deploy no corre. Aplicás el SQL a mano y lanzás el
@@ -87,7 +87,7 @@ env:
 
 jobs:
   # ---------------------------------------------------------------------------
-  # TEST{% if has_cd %} + VENDOR (vendor/ viaja como artifact al deploy: el build
+  # TEST{% if is_cr %} + VENDOR (vendor/ viaja como artifact al deploy: el build
   # de la imagen no tiene credenciales para módulos privados){% endif %}
   # ---------------------------------------------------------------------------
   test:
@@ -134,7 +134,7 @@ jobs:
           go mod verify
           go vet ./...
           go test ./... -count=1 -timeout=120s
-{%- if has_cd %}
+{%- if is_cr %}
 
       - name: Vendor
         if: github.event_name != 'pull_request'
@@ -149,6 +149,55 @@ jobs:
             go.mod
             go.sum
           retention-days: 1
+{%- endif %}
+{%- if is_cy %}
+{%- raw %}
+
+  # ---------------------------------------------------------------------------
+  # IMAGEN: corre en paralelo con test. vendor/ se genera acá (donde están las
+  # credenciales) y el build no toca la red. deploy.yml publica ESTA imagen
+  # (artifact `image`) sólo si test pasó.
+  # ---------------------------------------------------------------------------
+  image:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+{%- endraw %}
+{%- if protos_module %}
+{%- raw %}
+
+      - name: Acceso al módulo privado de protos
+        env:
+          PROTOS_TOKEN: ${{ secrets.PROTOS_TOKEN }}
+{%- endraw %}
+        run: git config --global url."https://x-access-token:${PROTOS_TOKEN}@{{ protos_module.split('/')[0] }}/".insteadOf "https://{{ protos_module.split('/')[0] }}/"
+{%- endif %}
+
+      - name: Vendor
+        run: |
+          go mod download
+          go mod verify
+          go mod vendor
+
+      - name: Build
+        run: |
+          DOCKER_BUILDKIT=1 docker build -t {{ repo_name }}:ci .
+          docker save -o image.tar {{ repo_name }}:ci
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: image
+          path: image.tar
+          retention-days: 1
+{%- endif %}
+{%- if has_cd %}
 {%- raw %}
 
   # ---------------------------------------------------------------------------
@@ -190,10 +239,10 @@ jobs:
   # ---------------------------------------------------------------------------
   release-qa:
     if: github.event_name == 'push' && startsWith(github.ref_name, 'qa-v')
-    needs: test
+{%- endraw %}
+    needs: {{ '[test, image]' if is_cy else 'test' }}
     permissions:
       contents: read
-{%- endraw %}
 {%- if is_cr %}
       id-token: write   # WIF
 {%- else %}
@@ -210,7 +259,7 @@ jobs:
 
   release-prod:
     if: github.event_name == 'push' && startsWith(github.ref_name, 'prod-v')
-    needs: [test, guard-prod]
+    needs: {{ '[test, image, guard-prod]' if is_cy else '[test, guard-prod]' }}
     permissions:
       contents: read
 {%- if is_cr %}
@@ -231,7 +280,7 @@ jobs:
   # environment `prod` (Settings > Environments).
   release-prod-override:
     if: github.event_name == 'workflow_dispatch'
-    needs: test
+    needs: {{ '[test, image]' if is_cy else 'test' }}
     permissions:
       contents: read
 {%- if is_cr %}

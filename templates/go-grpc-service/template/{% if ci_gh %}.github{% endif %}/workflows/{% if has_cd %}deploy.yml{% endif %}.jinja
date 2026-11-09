@@ -97,7 +97,8 @@ jobs:
             --project="$GCP_PROJECT" --format="value(status.url)"
 {% endraw %}
 {%- else -%}
-# Workflow reutilizable: build + push a GHCR + deploy en Coolify v4 (API).
+# Workflow reutilizable: push a GHCR de la imagen que armó el job `image` de
+# ci.yml (artifact `image`) + deploy en Coolify v4 (API).
 # Lo invoca ci.yml (no se dispara solo). Ver docs/deploy.md.
 
 name: deploy
@@ -113,6 +114,9 @@ on:
         description: "Tag de git = tag inmutable de la imagen (qa-v* / prod-v*)"
         required: true
         type: string
+
+env:
+  LOCAL_IMAGE: "{{ repo_name }}:ci"   # tag con el que el job `image` guardó image.tar
 {% raw %}
 jobs:
   deploy:
@@ -128,14 +132,10 @@ jobs:
       COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
       COOLIFY_RESOURCE_UUID: ${{ inputs.environment == 'prod' && vars.COOLIFY_RESOURCE_UUID_PROD || vars.COOLIFY_RESOURCE_UUID_QA }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.image_tag }}
-
-      # vendor/ + go.mod + go.sum generados por el job `test` del mismo run.
+      # image.tar del job `image` del mismo run (ci.yml).
       - uses: actions/download-artifact@v4
         with:
-          name: vendor
+          name: image
           path: .
 
       - name: Validar tag y variables
@@ -150,12 +150,14 @@ jobs:
           # GHCR exige el nombre en minúsculas.
           echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
 
-      - name: Build + push (GHCR)
+      - name: Push (GHCR)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          docker load -i image.tar
           echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
-          DOCKER_BUILDKIT=1 docker build -t "$IMAGE:$IMAGE_TAG" -t "$IMAGE:$TARGET_ENV" .
+          docker tag "$LOCAL_IMAGE" "$IMAGE:$IMAGE_TAG"
+          docker tag "$LOCAL_IMAGE" "$IMAGE:$TARGET_ENV"
           docker push "$IMAGE:$IMAGE_TAG"
           docker push "$IMAGE:$TARGET_ENV"
 
