@@ -11,15 +11,15 @@ Leyenda: ✅ publicada · 🔨 en construcción · 📐 especificada · 💭 ide
 
 | Plantilla | Estado | Versión | Spec |
 |---|---|---|---|
-| `go-grpc-service` | ✅ | v0.3.1 | `docs/04` |
-| `protos` | ✅ | v0.3.1 | — |
-| `api-gateway` (fase 1) | ✅ | v0.2.1 | `docs/05` |
-| `angular-app` | ✅ | v0.4.0 | `docs/07` |
-| `docs` | ✅ | v0.4.0 | `docs/06` |
-| `astro-site` | ✅ | v0.3.0 | `docs/07` |
-| `android-app` | ✅ | v0.2.1 | `docs/09` |
-| `e2e-tests` | ✅ | v0.2.1 | `docs/12` |
-| `api-gateway` con MCP (`mcp: true`) | 🔨 | — | `docs/15`, `docs/05` |
+| `go-grpc-service` | ✅ | v0.4.0 | `docs/04` |
+| `protos` | ✅ | v0.4.0 | — |
+| `api-gateway` (fase 1) | ✅ | v0.3.0 | `docs/05` |
+| `angular-app` | ✅ | v0.5.0 | `docs/07` |
+| `docs` | ✅ | v0.5.0 | `docs/06` |
+| `astro-site` | ✅ | v0.4.0 | `docs/07` |
+| `android-app` | ✅ | v0.3.0 | `docs/09` |
+| `e2e-tests` | ✅ | v0.3.0 | `docs/12` |
+| `api-gateway` con MCP (`mcp: true`) | ✅ | v0.3.0 | `docs/15`, `docs/05` |
 | `observabilidad-stack` | 📐 | — | `docs/14` |
 | `react-app` | 📐 | — | `docs/07`, `docs/13` |
 | `python-grpc-service` | 💭 | — | `docs/13` |
@@ -30,12 +30,13 @@ Leyenda: ✅ publicada · 🔨 en construcción · 📐 especificada · 💭 ide
 | Pieza | Estado | Spec |
 |---|---|---|
 | Plugin `dev-agentes`: `/verificar`, hooks `guard-worktree` y `format` | ✅ | `plugins/dev-agentes` |
-| Plugin `dev-agentes` v2: hooks de estado del agente (🔨 0.2.0), `/issue-start`, `/cerrar-issue`, `/coordinar` | 📐 | `docs/03` |
-| Plugin `dev-agentes`: sesiones en herdr (`/nueva-sesion`, `/esperando`, hook `herdr`) y layout de repo único | 🔨 0.3.0 | `docs/03` §13, `docs/01` |
+| Plugin `dev-agentes`: hooks de estado del agente (`report_status` al tracker) | ✅ 0.2.0 | `docs/03` §6–§7 |
+| Plugin `dev-agentes` v2: `/issue-start`, `/cerrar-issue`, `/coordinar` | 📐 | `docs/03` |
+| Plugin `dev-agentes`: sesiones en herdr (`/nueva-sesion`, `/esperando`, hook `herdr`) y layout de repo único | ✅ 0.3.0 | `docs/03` §13, `docs/01` |
 | Gestión de agentes: actores, estados, protocolo con el tracker | 📐 | `docs/03` |
-| `AGENTS.md` como fuente (plantillas y `docs/workspace/`) y `CLAUDE.md` con `@AGENTS.md` desde `_base` | 🔨 | `docs/03` §8 |
-| Capas de plataforma y `bootstrap` (`.ps1` y `.sh`) en la plantilla `docs`, rutas relativas a la raíz | 🔨 | `docs/01` |
-| MCP: servidores aprobados, `.mcp.json` y permisos en `_base` | 🔨 | `docs/15` §4 |
+| `AGENTS.md` como fuente (plantillas y `docs/workspace/`) y `CLAUDE.md` con `@AGENTS.md` desde `_base` | ✅ | `docs/03` §8 |
+| Capas de plataforma y `bootstrap` (`.ps1` y `.sh`) en la plantilla `docs`, rutas relativas a la raíz | ✅ | `docs/01` |
+| MCP: servidores aprobados, `.mcp.json` y permisos en `_base` | ✅ | `docs/15` §4 |
 | Destinos de deploy Google / Coolify y migración entre ellos | ✅ | `docs/04` |
 | Base común de repos, fase 1 (`templates/_base`: gitleaks, `.gitignore` de secretos, `SECURITY.md`, `CODEOWNERS`, plantilla de MR/PR, título del MR/PR) | ✅ | `docs/10` §11 |
 | Base común de repos, fases 2–5 (manifiesto, Renovate, release-please, protección) | 📐 | `docs/10` |
@@ -46,20 +47,16 @@ Leyenda: ✅ publicada · 🔨 en construcción · 📐 especificada · 💭 ide
 
 ## Próximo (en este orden)
 
-1. **Publicar lo que ya está en `main`:** el design system vrb (#24) y el
-   `reason` del `ErrorInfo` en el gateway (#25) se mergearon después de la
-   última publicación (2026-10-10); las 8 plantillas tienen cambios sin
-   publicar. Versión nueva de cada una con `scripts/publish-template.sh`.
-2. **MCP y gestión de agentes**, fase 1: `docs/15` y `docs/03` aprobados,
-   `AGENTS.md` junto a `CLAUDE.md`, `.mcp.json` y permisos MCP en `_base`, hooks
-   de estado en `dev-agentes`. El tracker de referencia es Tekitla
-   (`tekitla-mcp`), que se construye con la opción `mcp: true` del gateway.
-   — `docs/03` §12, `docs/15` §12
-3. **CLI `dp` H1–H2** (`list` y `new`): a partir de acá `dp` reemplaza los
+1. **Cerrar MCP y gestión de agentes, fase 1:** lo de `dev-plantillas` está
+   publicado (2026-11-09). Falta que Tekitla (`tekitla-mcp`) use `mcp: true` e
+   implemente `report_status` con los argumentos de `docs/03` §6, y que su MCP
+   lo consuma una sesión de Claude Code y una de Codex. Después: `x-agent-id`
+   para auditar el agente. — `docs/15` §10
+2. **CLI `dp` H1–H2** (`list` y `new`): a partir de acá `dp` reemplaza los
    comandos largos de Copier. — `docs/08` §9
-4. **Observabilidad, fase 1:** trazas + logs correlacionados en `go-grpc-service`
+3. **Observabilidad, fase 1:** trazas + logs correlacionados en `go-grpc-service`
    y `api-gateway`; `observabilidad-stack` mínimo. — `docs/14` §11
-5. **Recorrido de punta a punta:** un proyecto demo construido con todas las
+4. **Recorrido de punta a punta:** un proyecto demo construido con todas las
    plantillas y desplegado en Coolify; documenta y prueba que todo encaja.
 
 ## Después
