@@ -21,7 +21,7 @@ _message_after_copy: |
     3. git init && git add . && git add --chmod=+x scripts/*.sh
        git commit -m "Scaffold inicial desde go-grpc-service"
     4. cp .env.example .env.dev; make up  (Postgres + servicio con docker compose)
-    5. Completá la sección "Qué es este servicio" de CLAUDE.md.
+    5. Completá la sección "Qué es este servicio" de AGENTS.md.
   {%- if deploy_target == 'cloud-run' %}
     6. Infra de GCP y CI/CD (una sola vez): docs/ci-cd-setup.md
   {%- elif deploy_target == 'coolify' %}
@@ -49,7 +49,7 @@ service_name:
 
 service_description:
   type: str
-  help: "Descripción de una línea (va a CLAUDE.md; se puede completar después)"
+  help: "Descripción de una línea (va a AGENTS.md; se puede completar después)"
   default: "TODO: describir qué hace {{ service_name }}-service."
 
 ci_provider:
@@ -217,4 +217,12 @@ docs_repo:
     {% if docs_repo and not (docs_repo | regex_search('^https://[A-Za-z0-9.-]+(:[0-9]+)?(/[A-Za-z0-9._~-]+)+$')) %}
     URL https del repo, sin barra final (ej. https://gitlab.com/mi-org/docs), o vacío.
     {% endif %}
+
+tracker_mcp:
+  type: bool
+  help: >-
+    ¿El equipo usa un tracker con MCP (Tekitla u otro que cumpla el protocolo de
+    docs/03 §6)? Suma el servidor `tracker` a .mcp.json; la URL y el token salen
+    de TRACKER_MCP_URL y TRACKER_TOKEN en el entorno de cada persona
+  default: false
 # <<< base común

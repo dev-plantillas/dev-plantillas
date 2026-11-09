@@ -6,7 +6,7 @@ import (
 
 // Services es la ÚNICA lista de servicios gRPC que expone el gateway.
 //
-// Para agregar uno (ver CLAUDE.md, "Agregar una ruta"):
+// Para agregar uno (ver AGENTS.md, "Agregar una ruta"):
 //  1. El .proto del servicio tiene anotaciones google.api.http y el repo de
 //     protos generó su <archivo>.pb.gw.go.
 //  2. Una entrada acá: Name (define la variable UPSTREAM_<NAME>_ADDR),

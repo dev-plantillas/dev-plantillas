@@ -48,7 +48,7 @@ Los archivos que terminan en `.jinja` se renderizan; el resto se copia tal cual.
 ├── docs/deploy.md                      # recurso, variables, dominio/gRPC, backups a S3 + restore
 ├── docs/migrar-a-cloud-run.md          # paso a paso coolify -> cloud-run
 ├── Makefile, buf.yaml, buf.gen.yaml, go.mod, go.sum
-├── CLAUDE.md, .claude/settings.json
+├── AGENTS.md, CLAUDE.md, .claude/settings.json, .mcp.json
 └── .copier-answers.yml                 # respuestas (lo usa `copier update`)
 ```
 
@@ -100,7 +100,7 @@ cp .env.example .env.dev && make up      # postgres:16 + servicio en Docker, esp
 | Pregunta | Default | Uso |
 |---|---|---|
 | `service_name` | — | Nombre corto sin `-service` (`agenda` → `agenda-service`). Minúsculas/dígitos/guiones, máx. 19 (límite de 30 del service account `<nombre>-service-sa`) |
-| `service_description` | `TODO…` | Primera sección de `CLAUDE.md` |
+| `service_description` | `TODO…` | Primera sección de `AGENTS.md` |
 | `ci_provider` | `gitlab` | `gitlab` → `.gitlab-ci.yml`; `github` → `.github/workflows/ci.yml` + `deploy.yml` |
 | `dueño` | `@<org del module_path>/backend` | `CODEOWNERS` y `SECURITY.md` (`@usuario` o `@org/equipo`; base común, `docs/10` de dev-plantillas) |
 | `docs_repo` | vacío | URL del repo de docs: la plantilla de MR/PR enlaza la carpeta del issue ahí |
@@ -172,7 +172,7 @@ En un proyecto sin modificaciones locales no hay conflictos: aparecen los
 archivos de Cloud Run (`cloudbuild.yaml`, `cloudrun.*.yaml`, `.gcloudignore`,
 `scripts/rollback.sh`, `scripts/setup_cloud_run_secrets.sh`,
 `docs/ci-cd-setup.md`), desaparecen `docker-compose.coolify.yml`,
-`docs/deploy.md` y `docs/migrar-a-cloud-run.md`, y cambian la CI, `CLAUDE.md`,
+`docs/deploy.md` y `docs/migrar-a-cloud-run.md`, y cambian la CI, `AGENTS.md`,
 `.env.example` y comentarios de `docker-compose.yml`. El código Go no cambia y
 el resultado es idéntico a generar el proyecto directamente con `cloud-run`.
 Ojo: Copier borra los archivos que dejan de generarse **aunque tengan cambios
@@ -204,12 +204,12 @@ adivinar los paquetes de un repo de protos externo. Por eso:
   borraría mientras nadie lo importe, y el scaffold no compilaría sin acceso al
   repo privado).
 
-Para enchufar el repo de protos (ver también `CLAUDE.md` → "Protos"):
+Para enchufar el repo de protos (ver también `AGENTS.md` → "Protos"):
 
 1. `go get <protos_module>@<versión>`
 2. Handler que implemente el `XxxServiceServer` real (embebiendo
    `UnimplementedXxxServiceServer`), mapper, y registro en `cli/main.go`.
-3. Borrar el ejemplo: entidad `Item` (archivos listados en `CLAUDE.md`),
+3. Borrar el ejemplo: entidad `Item` (archivos listados en `AGENTS.md`),
    `proto/`, `gen/`, `buf.yaml`, `buf.gen.yaml`, tabla `items` de la migración.
 4. Si no se había respondido `protos_module`: `copier update --data protos_module=…`
    para que aparezca el cableado de CI/Makefile.
@@ -250,7 +250,7 @@ y correr `go build ./... && go test ./...` antes de commitear.
 ## Checklist post-generación
 
 - [ ] `go mod tidy && go build ./... && go vet ./... && go test ./...` en verde
-- [ ] Completar "Qué es este servicio" en `CLAUDE.md`; `cp .env.example .env.dev`; `make up`
+- [ ] Completar "Qué es este servicio" en `AGENTS.md`; `cp .env.example .env.dev`; `make up`
 - [ ] Crear el repo remoto (GitLab/GitHub) y push inicial; scripts con bit `+x`
 
 ### `coolify` (detalle en `docs/deploy.md`)

@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Arma el workspace del equipo en C:\dev\<Org>: carpetas, CLAUDE.md en capas y clones.
+  Arma el workspace del equipo en C:\dev\<Org>: carpetas, AGENTS.md y CLAUDE.md en capas y clones.
 .EXAMPLE
   .\scripts\bootstrap.ps1 -Org mi-org
   .\scripts\bootstrap.ps1 -Org mi-org -Root D:\code -ReposFile .\workspace\repos.txt
@@ -24,8 +24,10 @@ foreach ($d in 'backend','frontend','tools','worktrees') {
   New-Item -ItemType Directory -Force (Join-Path $base $d) | Out-Null
 }
 
-# CLAUDE.md en capas: nunca pisa uno existente (puede tener ajustes locales)
-foreach ($rel in 'CLAUDE.md','backend\CLAUDE.md','frontend\CLAUDE.md') {
+# AGENTS.md (fuente) y CLAUDE.md (@AGENTS.md) en capas: nunca pisa uno existente
+# (puede tener ajustes locales)
+foreach ($rel in 'AGENTS.md','CLAUDE.md','backend\AGENTS.md','backend\CLAUDE.md',
+                 'frontend\AGENTS.md','frontend\CLAUDE.md') {
   $dst = Join-Path $base $rel
   if (Test-Path $dst) { Write-Host "= $rel ya existe, no se toca" }
   else { (Get-Content (Join-Path $ws $rel) -Raw) -replace '<ORG>', $Org -replace '<org>', $Org |

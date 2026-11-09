@@ -1,6 +1,6 @@
 # detekt: análisis estático. Se suma a la configuración por defecto
 # (buildUponDefaultConfig) y SIN baseline: el proyecto arranca limpio.
-# Las reglas de acá refuerzan lo que CLAUDE.md dice que nunca se hace.
+# Las reglas de acá refuerzan lo que AGENTS.md dice que nunca se hace.
 
 config:
   validation: true

@@ -117,6 +117,23 @@ como "sin issue" y eso ya es una señal.
 renueva con el latido. Si el agente cuelga, el préstamo vence y el issue vuelve a
 quedar libre. Un issue tiene un solo agente implementador a la vez.
 
+**Herramientas MCP del protocolo.** Un tracker cumple el estándar si su
+servidor MCP (`docs/15` §6–§7) ofrece al menos estas herramientas, con estos
+nombres. La base común (`templates/_base`) las da de alta en `.mcp.json` como
+servidor `tracker` y les pone permisos:
+
+| Herramienta | Qué hace | Permiso en `_base` |
+|---|---|---|
+| `list_issues` | Issues con filtros (estado, proyecto, asignado) y cursor | `allow` |
+| `get_issue` | Un issue con su descripción, criterios y estado | `allow` |
+| `next_issue` | El siguiente issue libre por prioridad y rank (no lo toma) | `allow` |
+| `report_status` | Estado y resumen de la sesión propia (§4) | `allow` |
+| `claim_issue` | Toma un issue con préstamo | Pide confirmación |
+| `release_issue` | Suelta un issue tomado | Pide confirmación |
+
+Un tracker puede ofrecer más; lo que borra o cierra pide confirmación o se
+niega por repo.
+
 **Lo que el tracker automatiza** (cada uno se especifica en el tracker):
 
 - MR/PR abierto → `En revisión`; todos mergeados → `Testing` (GitLab y GitHub).
@@ -202,7 +219,9 @@ mensajes entre sesiones (`/coordinar`).
 
 **Fases**
 
-1. **Forma de trabajo:** este documento aprobado, `AGENTS.md` en `workspace/` y `_base`.
+1. **Forma de trabajo:** este documento aprobado, `AGENTS.md` en `workspace/` y
+   en cada plantilla, `CLAUDE.md` con `@AGENTS.md` desde `_base`. 🔨 construida,
+   falta publicar.
 2. **Estado visible:** tracker con sesiones y estados; hooks `SessionStart`,
    `UserPromptSubmit`, `Notification`, `Stop`, `SessionEnd`; aviso de `esperando-ok`.
 3. **Trabajo asignado:** `claim`/`release`, `/issue-start`, `/cerrar-issue`, `next_issue`.
