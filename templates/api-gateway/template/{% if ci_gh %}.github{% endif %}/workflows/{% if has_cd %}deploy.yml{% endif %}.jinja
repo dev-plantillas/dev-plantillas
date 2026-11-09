@@ -43,7 +43,7 @@ jobs:
         with:
           ref: ${{ inputs.image_tag }}
 
-      # vendor/ + go.mod + go.sum del job `test` del mismo run.
+      # vendor/ + go.mod + go.sum del job `image` del mismo run.
       - uses: actions/download-artifact@v4
         with:
           name: vendor

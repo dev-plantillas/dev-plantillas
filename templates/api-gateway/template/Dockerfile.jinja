@@ -2,9 +2,9 @@
 ###############################################################################
 # {{ repo_name }} — MULTI-STAGE DOCKERFILE (vendor)
 ###############################################################################
-# vendor/ lo genera el job de tests de la CI (`go mod vendor`, donde están las
-# credenciales para módulos privados como el repo de protos) y viaja como
-# artifact al build de la imagen. Este build NO toca la red para resolver
+# vendor/ lo genera el job `image` de la CI (`go mod vendor`, donde están las
+# credenciales para módulos privados como el repo de protos) antes del
+# `docker build`. Este build NO toca la red para resolver
 # dependencias.
 #
 # Build local: `make image` (= go mod vendor + docker build).

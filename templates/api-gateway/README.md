@@ -124,6 +124,8 @@ límite × instancias (`maxScale`; lo dicen `cloudrun.*.yaml` y `docs/rutas.md`)
   Cloud Run se mantiene Cloud Build (patrón de `go-grpc-service`) con el mismo
   commit, `vendor/` y Dockerfile. Sin guarda de migraciones (el gateway no
   tiene base).
+  En GitHub, test, govulncheck e imagen corren en paralelo y el release
+  espera a los tres.
 
 ## Verificar cambios en la plantilla
 
