@@ -68,14 +68,18 @@ expanden de variables de entorno.
 **Permisos** en `.claude/settings.json` (vienen de
 `_base/claude-settings.json`): las herramientas de lectura van en `allow`; las
 que escriben piden confirmación; las destructivas van en `deny` salvo que el
-repo las necesite. La base trae las del protocolo del tracker (`docs/03` §6):
+repo las necesite. La base trae las de lectura del protocolo del tracker
+(`docs/03` §6) más `get_flow_metrics`, de sólo lectura, que no es del
+protocolo sino de Tekitla, la implementación de referencia (métricas de flujo
+por semana). Con un tracker que no la ofrece, ese permiso no hace nada:
 
 ```json
 {
   "permissions": {
     "allow": [
       "mcp__tracker__list_issues", "mcp__tracker__get_issue",
-      "mcp__tracker__next_issue", "mcp__tracker__report_status"
+      "mcp__tracker__next_issue", "mcp__tracker__report_status",
+      "mcp__tracker__get_flow_metrics"
     ]
   }
 }

@@ -48,7 +48,8 @@
       "mcp__tracker__list_issues",
       "mcp__tracker__get_issue",
       "mcp__tracker__next_issue",
-      "mcp__tracker__report_status"
+      "mcp__tracker__report_status",
+      "mcp__tracker__get_flow_metrics"
     ],
     "deny": [
       "Read(./.env)",
