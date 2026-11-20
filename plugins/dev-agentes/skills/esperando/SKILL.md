@@ -16,22 +16,44 @@ Elegí una y correla como último paso del turno:
 ```bash
 # Terminás con una pregunta o una decisión para la persona
 herdr pane report-metadata "$HERDR_PANE_ID" --source dev-espera \
-  --token "espera=🙋 te pregunta" --token "espera_tipo=persona" --clear-token espera_a
+  --token "espera=🙋 te pregunta" --token "espera_tipo=persona" --clear-token espera_a \
+  --clear-token espera_motivo
 
 # Esperás a otra sesión
 herdr pane report-metadata "$HERDR_PANE_ID" --source dev-espera \
-  --token "espera=⏳ espera a <sesión>" --token "espera_tipo=sesion" --token "espera_a=<sesión>"
+  --token "espera=⏳ espera a <sesión>" --token "espera_tipo=sesion" --token "espera_a=<sesión>" \
+  --clear-token espera_motivo
 
 # Esperás algo que no es una sesión (un CI, un merge, un deploy)
 herdr pane report-metadata "$HERDR_PANE_ID" --source dev-espera \
-  --token "espera=⏳ espera a <qué>" --token "espera_tipo=otro" --token "espera_a=<qué>"
+  --token "espera=⏳ espera a <qué>" --token "espera_tipo=otro" --token "espera_a=<qué>" \
+  --clear-token espera_motivo
 
 # Quitar la marca a mano
 herdr pane report-metadata "$HERDR_PANE_ID" --source dev-espera \
-  --clear-token espera --clear-token espera_tipo --clear-token espera_a
+  --clear-token espera --clear-token espera_tipo --clear-token espera_a \
+  --clear-token espera_motivo
 ```
+
+**Motivo (opcional).** Si sabés por qué esperás, cambiá `--clear-token
+espera_motivo` por `--token "espera_motivo=<motivo>"`, con uno de estos
+valores tal cual:
+
+| Motivo | Cuándo |
+|---|---|
+| `revision` | Pedís que revise un PR/MR, un plan o un documento |
+| `pruebas` | Pedís que pruebe algo a mano |
+| `decision` | Pedís que elija entre opciones o apruebe un cambio |
+| `deploy` | Un deploy o un release espera su OK (con `espera_tipo=otro` también) |
+
+Cualquier otro valor no se usa. Sin motivo, se borra el que haya quedado de
+antes (por eso cada comando de arriba lleva `--clear-token espera_motivo`).
+Ejemplo: `--token "espera=🙋 te pregunta" --token "espera_tipo=persona"
+--clear-token espera_a --token "espera_motivo=revision"`.
 
 Los tokens de la fuente `dev-espera` son un contrato para quien los lea (la
 barra lateral, un tracker): `espera` es el texto visible y puede cambiar;
 `espera_tipo` es `persona`, `sesion` u `otro`; `espera_a` dice a quién o a qué
-se espera (vacío si es la persona).
+se espera (vacío si es la persona); `espera_motivo` es `revision`, `pruebas`,
+`decision` o `deploy`, o no está. Quien lo lea toma el valor tal cual y trata
+uno desconocido como vacío.

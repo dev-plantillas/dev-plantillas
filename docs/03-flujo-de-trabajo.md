@@ -337,7 +337,14 @@ texto y queda esperando, se marca con el skill `esperando` antes de cortar:
 
 La marca se limpia sola cuando la sesión vuelve a recibir trabajo (hook
 `herdr.sh` en `UserPromptSubmit`). Los tokens de la fuente `dev-espera`
-(`espera`, `espera_tipo`, `espera_a`) son un contrato estable para quien los
-lea; el texto de `espera` puede cambiar. La regla para las sesiones ("marcate
+(`espera`, `espera_tipo`, `espera_a`, `espera_motivo`) son un contrato estable
+para quien los lea; el texto de `espera` puede cambiar.
+
+**Motivo de la espera** (opcional, token `espera_motivo`): `revision`,
+`pruebas`, `decision` o `deploy`. Sirve sobre todo con `persona`, y también
+con `otro` (un deploy que espera OK es `deploy`). Sin motivo, el token se
+borra; `herdr.sh` también lo borra al recibir trabajo. Un tracker lo lee tal
+cual y trata un valor desconocido como vacío (Tekitla lo usa para medir las
+esperas por motivo). La regla para las sesiones ("marcate
 antes de quedarte esperando") va en el `CLAUDE.md` de plataforma
 (`docs/workspace/CLAUDE.md`).
