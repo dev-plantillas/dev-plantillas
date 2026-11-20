@@ -175,7 +175,7 @@ herdr_hook() { # evento [VAR=valor...]
 herdr_hook inicio; rc=$?
 [ $rc = 0 ] && [ ! -s "$FAKE_HERDR_LOG.out" ] && ok || ko "herdr inicio: exit $rc o escribió en stdout"
 grep -q -- '--source dev-estados.*--state-label blocked=⚠ TU DECISIÓN' "$FAKE_HERDR_LOG" && ok || ko "herdr inicio: sin etiquetas ($(cat "$FAKE_HERDR_LOG"))"
-grep -q -- 'w1:p2 --source dev-espera --clear-token espera --clear-token espera_tipo --clear-token espera_a' "$FAKE_HERDR_LOG" && ok || ko "herdr inicio: no limpió la marca"
+grep -q -- 'w1:p2 --source dev-espera --clear-token espera --clear-token espera_tipo --clear-token espera_a --clear-token espera_motivo' "$FAKE_HERDR_LOG" && ok || ko "herdr inicio: no limpió la marca"
 herdr_hook turno
 [ "$(wc -l <"$FAKE_HERDR_LOG" | tr -d ' ')" = 1 ] && grep -q 'dev-espera --clear-token espera' "$FAKE_HERDR_LOG" && ok || ko "herdr turno: $(cat "$FAKE_HERDR_LOG")"
 herdr_hook inicio HERDR_ENV=
