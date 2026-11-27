@@ -19,14 +19,12 @@ Estado y prioridades: [`ROADMAP.md`](ROADMAP.md).
 | `templates/docs/` | Plantilla Copier: repo central de documentación (issues por carpeta, ADRs, runbooks, releases) con frontmatter validado, índices generados y MkDocs Material |
 | `plugins/dev-agentes/` | Plugin de Claude Code: skills, agentes y hooks del flujo de trabajo |
 | `.claude-plugin/` | Marketplace: permite instalar el plugin con `/plugin marketplace add dev-plantillas/dev-plantillas` |
-| `workspace/` | `CLAUDE.md` en capas (plataforma, backend, frontend) y lista de repos |
-| `scripts/bootstrap.ps1` | Arma `C:\dev\<org>` en una máquina nueva |
-| `scripts/new-worktree.ps1` | Crea los worktrees de un issue |
+| `scripts/new-worktree.ps1` | Crea los worktrees de un issue (workspace o repo único); con `-Herdr` abre la sesión en herdr (`docs/03` §13) |
 | `scripts/sincronizar-base.py` | Copia `templates/_base` a cada plantilla; `--comprobar` falla si alguna quedó desactualizada (lo corre el CI) |
 | `scripts/publish-template.sh` | Publica una plantilla en su propio repo con tag |
 | `docs/01-estructura-de-carpetas.md` | Layout local del equipo |
 | `docs/02-repositorios-gitlab-github.md` | Organización, nombres, protección y CI en GitLab/GitHub |
-| `docs/03-flujo-de-trabajo.md` | Issue → worktree → sesión → MR, con varios agentes en paralelo |
+| `docs/03-flujo-de-trabajo.md` | Issue → worktree → sesión → MR; actores, tipos de sesión, estados de los agentes, tracker y coordinación entre sesiones |
 | `docs/04-stack-y-despliegue.md` | Stack Google primero, destinos de deploy (Google o Coolify) y cómo migrar entre ellos |
 | `docs/05-api-gateway.md` | Diseño y seguridad del API gateway (OWASP API Top 10): especificación de la plantilla |
 | `docs/06-documentacion.md` | Diseño del repo de documentación (issues, ADRs, runbooks, MkDocs): especificación de la plantilla |
@@ -38,6 +36,7 @@ Estado y prioridades: [`ROADMAP.md`](ROADMAP.md).
 | `docs/12-pruebas.md` | Pruebas dentro del flujo de desarrollo (controles por etapa, trazabilidad, bugs e inestables) y especificación de `e2e-tests` |
 | `docs/13-elegir-tecnologia.md` | Qué lenguaje de backend y qué herramienta de front o móvil usar según el problema, y el costo de sumar una tecnología |
 | `docs/14-observabilidad.md` | Trazas, métricas, logs correlacionados, SLOs y alertas con OpenTelemetry (Google o Grafana en Coolify) |
+| `docs/15-mcp.md` | MCP: servidores que consumen los agentes (`.mcp.json`, permisos, seguridad) y cómo un proyecto expone el suyo (opción `mcp: true` del gateway) |
 
 ## Requisitos
 
@@ -49,19 +48,19 @@ Estado y prioridades: [`ROADMAP.md`](ROADMAP.md).
 
 Las plantillas publicadas viven en la organización [`dev-plantillas`](https://github.com/dev-plantillas), una por repo (`gh:dev-plantillas/template-<nombre>`); este monorepo es donde se desarrollan.
 
-```powershell
-# Máquina nueva
-git clone <url>/dev-plantillas C:\dev\<org>\plantillas
-C:\dev\<org>\plantillas\scripts\bootstrap.ps1 -Org <org>
+Máquina nueva: se clona el repo de documentación del proyecto (plantilla
+`docs`) y se corre su `workspace/bootstrap` (`docs/01`). Lo demás, desde la raíz
+del workspace:
 
+```bash
 # Servicio nuevo
-python -m copier copy --vcs-ref v1.0.0 <url>/template-go-grpc-service C:\dev\<org>\backend\agenda-service
+python -m copier copy --vcs-ref v1.0.0 <url>/template-go-grpc-service backend/agenda-service
 
 # App nueva
-python -m copier copy --vcs-ref v1.0.0 <url>/template-angular-app C:\dev\<org>\frontend\admin-web
+python -m copier copy --vcs-ref v1.0.0 <url>/template-angular-app frontend/admin-web
 
 # Traer mejoras de la plantilla a un repo existente
-cd C:\dev\<org>\backend\agenda-service; python -m copier update
+cd backend/agenda-service && python -m copier update
 ```
 
 ## Cambiar una plantilla

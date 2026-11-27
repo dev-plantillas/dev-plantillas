@@ -12,7 +12,8 @@ Está extraída del patrón de la app de admin existente, sin nombres ni IDs rea
 
 ```
 <app>/
-├── CLAUDE.md                     contexto corto para agentes (stack, estructura, reglas)
+├── AGENTS.md                     contexto corto para agentes (stack, estructura, reglas)
+├── CLAUDE.md, .mcp.json          importa AGENTS.md + lo propio de Claude Code; MCP del proyecto
 ├── .claude/settings.json         permisos allow/deny para Claude Code
 ├── .gitlab-ci.yml | .github/     CI: MR/PR → lint + unit + build; deploy según deploy_target
 ├── .npmrc                        @vrojas1015 → GitHub Packages, token por NODE_AUTH_TOKEN
@@ -158,7 +159,7 @@ SemVer (`v1.0.0`). El proyecto tiene que estar commiteado y limpio antes de actu
    con `docker compose up --build`.
 9. Configurar el repo según `docs/02-repositorios-gitlab-github.md` (rama protegida,
    pipeline obligatorio, aprobaciones).
-10. Ajustar `CLAUDE.md` con lo propio de la app (sin pasar de ~120 líneas).
+10. Ajustar `AGENTS.md` con lo propio de la app (sin pasar de ~120 líneas).
 
 ## Mantener la plantilla
 

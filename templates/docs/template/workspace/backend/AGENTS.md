@@ -1,11 +1,11 @@
 # Backend — Convenciones comunes
 
-Aplica a todo repo bajo `backend\`. El `CLAUDE.md` de cada micro sólo agrega lo
+Aplica a todo repo bajo `backend\`. El `AGENTS.md` de cada micro sólo agrega lo
 propio (puerto, schema, entidades, particularidades).
 
 ## Arquitectura (hexagonal)
 
-```
+```text
 adapters → application → domain ← infra
                          (ports)
 ```

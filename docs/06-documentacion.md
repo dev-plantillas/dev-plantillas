@@ -83,7 +83,8 @@ repos: [protos, orders-service, api-gateway, admin-web]   # en orden de ejecuci�
 creado: 2026-10-09
 resuelto: null
 relacionados: [37]
-disenos: [detalle-de-pedido]   # (opcional) diseños que implementa; aprobados para pasar a en-curso
+tracker: RND-42           # opcional: clave del issue en el tracker (docs/03 §6)
+disenos: [detalle-de-pedido]   # opcional: diseños que implementa; aprobados para pasar a en-curso
 ---
 ```
 

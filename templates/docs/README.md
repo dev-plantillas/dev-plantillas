@@ -18,10 +18,11 @@ docs/
 ├── mkdocs.yml                     # docs_dir: contenido, strict, Mermaid, búsqueda, modo oscuro, hook
 ├── Makefile                       # nuevo, validar, generar, servir, construir (+ instalar)
 ├── requirements.txt               # versiones fijas
-├── CLAUDE.md, .claude/settings.json, README.md
+├── AGENTS.md, CLAUDE.md, .claude/settings.json, .mcp.json, README.md
 ├── esquemas/*.schema.json         # issue, plan, adr, servicio, runbook, postmortem, release
 ├── scripts/                       # nuevo.py, validar.py, generar.py, hook_mkdocs.py, comun.py
 ├── _plantillas/                   # issue, plan, adr, runbook, postmortem, release, servicio
+├── workspace/                     # capas de plataforma (AGENTS.md raíz, backend/, frontend/), repos.txt, bootstrap.ps1/.sh
 ├── contenido/
 │   ├── index.md, estilos/extra.css
 │   ├── plataforma/                # índice, arquitectura (Mermaid), ambientes, glosario, cómo documentar
@@ -62,7 +63,7 @@ git add . && git commit -m "docs: scaffold inicial"
 | Pregunta | Default | Uso |
 |---|---|---|
 | `org_name` | `mi-org` | Grupo/owner; base de `url_repo` de las fichas y de `repo_url` del sitio |
-| `titulo_sitio` | `Documentación de <org>` | `site_name`, `index.md`, `CLAUDE.md` |
+| `titulo_sitio` | `Documentación de <org>` | `site_name`, `index.md`, `AGENTS.md` |
 | `repos_iniciales` | `[protos, api-gateway]` | Lista YAML (kebab-case, sin repetidos). Una ficha por repo, repos del issue 001 y mapa inicial |
 | `obsidian` | `true` | `contenido/.obsidian/` mínimo |
 | `deploy_target` | `ninguno` | `firebase-hosting` \| `coolify` \| `ninguno` |

@@ -48,7 +48,7 @@ repo_name:
 
 service_description:
   type: str
-  help: "Descripción de una línea (va a CLAUDE.md; se puede completar después)"
+  help: "Descripción de una línea (va a AGENTS.md; se puede completar después)"
   default: "Puerta pública REST de la plataforma: traduce a gRPC y concentra auth, autorización por ruta y límites."
 
 ci_provider:
@@ -79,7 +79,7 @@ http_port:
 go_version:
   type: str
   help: "Versión de Go (go.mod, imagen de build y CI). grpc-gateway v2.31 exige >= 1.26"
-  default: "1.26.9"
+  default: "1.26.10"
   validator: >-
     {% if not (go_version | regex_search('^1\.[0-9]+\.[0-9]+$')) %}Formato esperado: 1.X.Y
     {% elif (go_version.split('.')[1] | int) < 26 %}grpc-gateway v2.31 exige Go 1.26 o más nuevo.{% endif %}
@@ -106,6 +106,18 @@ auth:
     "API keys (máquina a máquina; guardadas como hash SHA-256)": api-key
     "Ninguna (todas las rutas públicas; solo demos o APIs abiertas)": ninguno
   default: firebase
+
+mcp:
+  type: bool
+  help: >-
+    ¿Exponer un servidor MCP en /mcp? Los métodos de routes.yaml con `mcp:` pasan
+    a ser herramientas para agentes, con la misma auth, roles y rate limit que la
+    API REST (docs/15 de dev-plantillas). Requiere auth
+  default: false
+  validator: >-
+    {% if mcp and auth == 'ninguno' %}
+    MCP necesita auth: cada llamada tiene que tener un actor (docs/15 §8).
+    {% endif %}
 
 firebase_project:
   type: str
@@ -257,4 +269,12 @@ docs_repo:
     {% if docs_repo and not (docs_repo | regex_search('^https://[A-Za-z0-9.-]+(:[0-9]+)?(/[A-Za-z0-9._~-]+)+$')) %}
     URL https del repo, sin barra final (ej. https://gitlab.com/mi-org/docs), o vacío.
     {% endif %}
+
+tracker_mcp:
+  type: bool
+  help: >-
+    ¿El equipo usa un tracker con MCP (Tekitla u otro que cumpla el protocolo de
+    docs/03 §6)? Suma el servidor `tracker` a .mcp.json; la URL y el token salen
+    de TRACKER_MCP_URL y TRACKER_TOKEN en el entorno de cada persona
+  default: false
 # <<< base común

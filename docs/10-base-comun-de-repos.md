@@ -198,7 +198,7 @@ issue dice por qué es sólo de ese proyecto. Así los proyectos no se desactual
 entre sí y los demás lo reciben con `copier update`. Las dos últimas casillas del
 checklist (avance del issue en `docs` con su PR abierto al mismo tiempo que el de
 código, y el PR en `dev-plantillas`) lo hacen visible en cada revisión; la sección
-«Terminado significa» de `workspace/CLAUDE.md` pide lo mismo a los agentes.
+«Terminado significa» del `AGENTS.md` de plataforma (`docs/workspace/` de la plantilla `docs`) pide lo mismo a los agentes.
 
 ## 9. Fases
 
@@ -249,7 +249,9 @@ de `dev-plantillas` y `publish-template.sh` antes de publicar.
 | `gitignore` | Bloque `# >>> base común` … `# <<< base común` **al principio** del `.gitignore` |
 | `gitlab/include.yml` | Mismo bloque en `.gitlab-ci.yml`, antes de la primera clave (`include: local: .gitlab/base.gitlab-ci.yml`) |
 | `copier-preguntas.yml` | Mismo bloque al final de `copier.yml`; el default de `dueño` es por plantilla (`DUEÑO_DEFAULT` en el script) |
-| `claude-settings.json` | Agrega a `.claude/settings.json` los permisos que falten (`pre-commit run`, `gitleaks git`, …; deny de lectura de `*.pem`, `*.key`, keystores) |
+| `claude-settings.json` | Agrega a `.claude/settings.json` los permisos que falten (`pre-commit run`, `gitleaks git`, lectura del tracker por MCP, …; deny de lectura de `*.pem`, `*.key`, keystores) |
+| `CLAUDE.md` | Copia tal cual: `@AGENTS.md` + lo propio de Claude Code. El contexto del repo es el `template/AGENTS.md(.jinja)` de cada plantilla; el script falla si falta o si queda un `CLAUDE.md.jinja` (`docs/03` §8) |
+| `mcp.json.jinja` | Copia como `.mcp.json.jinja`: servidores MCP del proyecto, vacío o con el tracker según `tracker_mcp` (`docs/15` §4) |
 
 Los bloques van al principio (y no al final) de `.gitignore` y `.gitlab-ci.yml`
 porque al final es donde cada repo agrega lo suyo: así `copier update` no da
@@ -289,6 +291,7 @@ son de la fase 4.
 |---|---|---|
 | `dueño` | `@<org>/backend` (Go, gateway, protos), `@<org>/plataforma` (docs), `@mi-org/frontend`, `@mi-org/movil`, `@mi-org/qa` | `CODEOWNERS` y `SECURITY.md`. Formato `@usuario` o `@org/equipo` |
 | `docs_repo` | vacío | URL del repo de docs: la plantilla de MR/PR enlaza la carpeta de issues ahí |
+| `tracker_mcp` | `false` | Suma el servidor `tracker` a `.mcp.json` (URL y token desde el entorno de cada persona) |
 
 Con los defaults, `copier update --defaults` de un repo existente trae la base
 sin preguntar.

@@ -56,16 +56,16 @@ jobs:
         run: bash plugins/dev-agentes/skills/verificar/scripts/verify.sh "$RUNNER_TEMP/demo-service"
 
   api-gateway:
-    name: api-gateway (${{ matrix.auth }}, ${{ matrix.ci }}, ${{ matrix.deploy }})
+    name: api-gateway (${{ matrix.auth }}, ${{ matrix.ci }}, ${{ matrix.deploy }}, mcp=${{ matrix.mcp }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         include:
-          - { auth: firebase, ci: gitlab, deploy: cloud-run }
-          - { auth: oidc,     ci: github, deploy: coolify }
-          - { auth: api-key,  ci: gitlab, deploy: ninguno }
-          - { auth: ninguno,  ci: github, deploy: cloud-run }
+          - { auth: firebase, ci: gitlab, deploy: cloud-run, mcp: true }
+          - { auth: oidc,     ci: github, deploy: coolify,   mcp: false }
+          - { auth: api-key,  ci: gitlab, deploy: ninguno,   mcp: true }
+          - { auth: ninguno,  ci: github, deploy: cloud-run, mcp: false }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -73,7 +73,7 @@ jobs:
       - run: pip install copier
       - name: Generar
         run: |
-          copier copy --defaults --trust             -d auth=${{ matrix.auth }} -d ci_provider=${{ matrix.ci }}             -d deploy_target=${{ matrix.deploy }}             templates/api-gateway "$RUNNER_TEMP/gw"
+          copier copy --defaults --trust             -d auth=${{ matrix.auth }} -d ci_provider=${{ matrix.ci }}             -d deploy_target=${{ matrix.deploy }} -d mcp=${{ matrix.mcp }}             templates/api-gateway "$RUNNER_TEMP/gw"
       - uses: actions/setup-go@v5
         with:
           go-version-file: ${{ runner.temp }}/gw/go.mod
@@ -152,6 +152,16 @@ jobs:
           claude plugin validate --strict plugins/dev-agentes
       - name: Sintaxis de scripts
         run: find plugins scripts -name '*.sh' -print0 | xargs -0 -n1 bash -n
+      - name: Sintaxis de scripts PowerShell
+        shell: pwsh
+        run: |
+          $mal = 0
+          Get-ChildItem plugins, scripts -Recurse -Filter *.ps1 | ForEach-Object {
+            $e = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$null, [ref]$e)
+            if ($e) { $e | ForEach-Object { Write-Host "::error file=$($_.Extent.File),line=$($_.Extent.StartLineNumber)::$($_.Message)" }; $mal++ }
+          }
+          exit $mal
       - uses: actions/setup-go@v5
         with: { go-version: stable }
       - name: Tests de hooks
@@ -397,6 +407,20 @@ jobs:
   # Sitio público Astro: lint, astro check + build, test de SEO y de JSON-LD
   # (con las páginas SSR en híbrido) y Lighthouse CI con presupuestos. Con
   # coolify, además, la imagen sirve el sitio y da 404 real.
+  # Formato en todas las combinaciones de astro-site (48): sólo prettier, sin
+  # instalar el proyecto. La matriz de abajo compila unas pocas.
+  astro-site-formato:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install copier
+      - uses: actions/setup-node@v4
+        with: { node-version: "24" }
+      - name: prettier --check en cada combinación
+        run: bash .github/astro-site/formato.sh "$RUNNER_TEMP/formato"
+
   astro-site:
     name: astro-site (${{ matrix.render }}, ${{ matrix.idiomas }}, ${{ matrix.deploy }})
     runs-on: ubuntu-latest
@@ -407,6 +431,7 @@ jobs:
           - { render: estatico, idiomas: "[es]",     blog: true,  ent: false, analytics: plausible, ci: github, deploy: coolify }
           - { render: estatico, idiomas: "[es, en]", blog: true,  ent: true,  analytics: ga4,       ci: gitlab, deploy: firebase-hosting }
           - { render: hibrido,  idiomas: "[es, en]", blog: false, ent: true,  analytics: ninguna,   ci: github, deploy: cloud-run }
+          - { render: estatico, idiomas: "[es]",     blog: false, ent: false, analytics: ninguna,   ci: github, deploy: firebase-hosting }
     env:
       PUBLIC_ENTORNO: prod
       PUBLIC_API_FUENTE: mock
@@ -539,6 +564,42 @@ jobs:
         with: { python-version: "3.12" }
       - name: Plantillas sincronizadas con templates/_base
         run: python scripts/sincronizar-base.py --comprobar
+      - name: AGENTS.md, CLAUDE.md y .mcp.json en un repo generado (docs/03 §8, docs/15 §4)
+        run: |
+          pip install copier
+          for mcp in false true; do
+            d="$RUNNER_TEMP/base-$mcp"
+            copier copy --defaults --trust -d org_name=demo -d tracker_mcp=$mcp templates/protos "$d"
+            test -s "$d/AGENTS.md"
+            test "$(head -1 "$d/CLAUDE.md")" = "@AGENTS.md"
+            python - "$d" "$mcp" <<'PY'
+          import json, sys
+          d, mcp = sys.argv[1], sys.argv[2] == "true"
+          servidores = json.load(open(f"{d}/.mcp.json"))["mcpServers"]
+          assert list(servidores) == (["tracker"] if mcp else []), servidores
+          allow = json.load(open(f"{d}/.claude/settings.json"))["permissions"]["allow"]
+          assert "mcp__tracker__get_issue" in allow, allow
+          PY
+          done
+      - name: bootstrap del workspace (plantilla docs, docs/01)
+        env:
+          GIT_AUTHOR_NAME: ci
+          GIT_AUTHOR_EMAIL: ci@example.com
+          GIT_COMMITTER_NAME: ci
+          GIT_COMMITTER_EMAIL: ci@example.com
+        run: |
+          r="$RUNNER_TEMP/ws"
+          copier copy --defaults --trust -d org_name=demo templates/docs "$r/docs"
+          git init -q -b main "$RUNNER_TEMP/origen" && git -C "$RUNNER_TEMP/origen" commit -q --allow-empty -m init
+          printf 'backend/protos %s\n' "$RUNNER_TEMP/origen" > "$r/docs/workspace/repos.txt"
+          bash "$r/docs/workspace/bootstrap.sh"
+          bash "$r/docs/workspace/bootstrap.sh"   # idempotente
+          test -d "$r/backend/protos/.git"
+          test "$(cat "$r/CLAUDE.md")" = "@docs/workspace/CLAUDE.md"
+          test "$(cat "$r/backend/CLAUDE.md")" = "@../docs/workspace/backend/AGENTS.md"
+          grep -q "no editar" "$r/frontend/AGENTS.md"
+          mkdir -p "$RUNNER_TEMP/OneDrive/x" && cp -r "$r/docs" "$RUNNER_TEMP/OneDrive/x/"
+          if bash "$RUNNER_TEMP/OneDrive/x/docs/workspace/bootstrap.sh"; then echo "corrió dentro de OneDrive"; exit 1; fi
       - name: Chequeo del título del MR/PR
         run: |
           v=templates/_base/scripts/verificar-titulo.sh

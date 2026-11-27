@@ -63,7 +63,7 @@ Las pantallas se diseñan con archivos locales en el repo de documentación
 implementa **sólo** la `version_aprobada` de un diseño `aprobado`, el que nombra
 el issue en `disenos`; los borradores y las demás versiones no son referencia, y
 sin diseño aprobado no se inventa la interfaz. Lo hace cumplir `make validar`
-del repo `docs`, y la regla está en el `CLAUDE.md` de `angular-app`,
+del repo `docs`, y la regla está en el `AGENTS.md` de `angular-app`,
 `astro-site` y `android-app`. Detalle: `06-documentacion.md` › Diseño.
 
 ## 2. `astro-site`: arquitectura

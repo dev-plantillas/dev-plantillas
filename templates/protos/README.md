@@ -28,7 +28,7 @@ renderizan y el resto se copia tal cual.
 ├── Makefile                              # lint, breaking, generate, check, release VERSION=x.y.z
 ├── .gitlab-ci.yml | .github/workflows/ci.yml, plantilla de MR/PR
 ├── docs/{consumir,publicar,co-desarrollo}.md
-├── CLAUDE.md, .claude/settings.json, README.md
+├── AGENTS.md, CLAUDE.md, .claude/settings.json, .mcp.json, README.md
 └── .copier-answers.yml
 ```
 

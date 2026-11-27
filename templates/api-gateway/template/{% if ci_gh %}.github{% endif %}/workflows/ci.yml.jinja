@@ -55,6 +55,8 @@ env:
 {%- endif %}
 
 jobs:
+  # test, govulncheck e image corren en paralelo (cada uno en su runner); el
+  # release espera a los tres. setup-go cachea módulos y build entre corridas.
   test:
     runs-on: ubuntu-latest
     steps:
@@ -79,11 +81,52 @@ jobs:
           test -z "$(gofmt -l app cli)" || { gofmt -l app cli; echo "gofmt pendiente"; exit 1; }
           go vet ./...
           go test ./... -count=1 -timeout=180s
+
+  govulncheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+{%- raw %}
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+{%- endraw %}
+{%- if protos_module %}
+{%- raw %}
+      - name: Acceso al módulo privado de protos
+        env:
+          PROTOS_TOKEN: ${{ secrets.PROTOS_TOKEN }}
+{%- endraw %}
+        run: git config --global url."https://x-access-token:${PROTOS_TOKEN}@{{ protos_module.split('/')[0] }}/".insteadOf "https://{{ protos_module.split('/')[0] }}/"
+{%- endif %}
       - name: govulncheck
         run: go run "golang.org/x/vuln/cmd/govulncheck@${GOVULNCHECK_VERSION}" ./...
+
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+{%- raw %}
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+{%- endraw %}
+{%- if protos_module %}
+{%- raw %}
+      - name: Acceso al módulo privado de protos
+        env:
+          PROTOS_TOKEN: ${{ secrets.PROTOS_TOKEN }}
+{%- endraw %}
+        run: git config --global url."https://x-access-token:${PROTOS_TOKEN}@{{ protos_module.split('/')[0] }}/".insteadOf "https://{{ protos_module.split('/')[0] }}/"
+{%- endif %}
       - name: Vendor (el build de la imagen no tiene red ni credenciales)
-        run: go mod vendor
+        run: |
+          go mod download
+          go mod verify
+          go mod vendor
+{%- if is_cr %}
       - uses: actions/upload-artifact@v4
+        if: github.event_name == 'push'
         with:
           name: vendor
           path: |
@@ -91,16 +134,7 @@ jobs:
             go.mod
             go.sum
           retention-days: 1
-
-  image:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          name: vendor
-          path: .
+{%- endif %}
       - name: Build
         run: DOCKER_BUILDKIT=1 docker build -t {{ repo_name }}:ci .
       - name: Trivy (HIGH/CRITICAL con fix -> falla)
@@ -124,7 +158,7 @@ jobs:
 
   release-qa:
     if: github.event_name == 'push' && startsWith(github.ref_name, 'qa-v')
-    needs: image
+    needs: [test, govulncheck, image]
     permissions:
       contents: read
 {%- endraw %}
@@ -144,7 +178,7 @@ jobs:
 
   release-prod:
     if: github.event_name == 'push' && startsWith(github.ref_name, 'prod-v')
-    needs: image
+    needs: [test, govulncheck, image]
     permissions:
       contents: read
 {%- if is_cr %}

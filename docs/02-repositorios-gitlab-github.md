@@ -86,25 +86,28 @@ nuevo tag, y cada repo lo adopta subiendo la versión del `include`.
 
 ## 6. Crear un repo nuevo (paso a paso)
 
-```powershell
+Los comandos corren desde la raíz del workspace (`docs/01`).
+
+```bash
 # 1. Generar el código desde la plantilla (siempre desde un tag publicado)
-python -m copier copy --vcs-ref v1.0.0 https://gitlab.com/<org>/platform/template-go-grpc-service.git C:\dev\<org>\backend\agenda-service
+python -m copier copy --vcs-ref v1.0.0 https://gitlab.com/<org>/platform/template-go-grpc-service.git backend/agenda-service
 
 # 2. Crear el repo remoto vacío
 glab repo create <org>/backend/agenda-service --private --defaultBranch main     # GitLab
 gh repo create <org>/agenda-service --private --source . --push                  # GitHub
 
 # 3. Primer push
-git -C C:\dev\<org>\backend\agenda-service push -u origin main
+git -C backend/agenda-service push -u origin main
 
 # 4. Aplicar los ajustes de §4 (una vez; se puede scriptear con la API)
 # 5. Infra: seguir docs/ci-cd-setup.md del repo generado (WIF, SA, secrets)
+# 6. Sumarlo a docs/workspace/repos.txt y al mapa del AGENTS.md de plataforma
 ```
 
 ## 7. Mantener los repos al día con la plantilla
 
-```powershell
-cd C:\dev\<org>\backend\agenda-service
+```bash
+cd backend/agenda-service
 python -m copier update        # aplica los cambios nuevos de la plantilla como diff
 ```
 

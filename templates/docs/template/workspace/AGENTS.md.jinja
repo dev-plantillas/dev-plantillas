@@ -1,40 +1,52 @@
-# <ORG> — Contexto de la plataforma
+# {{ org_name }} — contexto de la plataforma
 
-Este archivo vive en `C:\dev\<org>\` y lo lee toda sesión que arranque dentro de
-la plataforma. Las reglas de cada stack están en `backend\CLAUDE.md` y
-`frontend\CLAUDE.md`; las de cada repo, en su propio `CLAUDE.md`.
+Lo lee toda sesión que arranque dentro del workspace de {{ org_name }}. Las
+reglas de cada stack están en `backend/AGENTS.md` y `frontend/AGENTS.md`; las
+de cada repo, en su propio `AGENTS.md`.
+
+**El workspace** es la carpeta que contiene `docs/`, `backend/`, `frontend/` y
+`worktrees/`. Cada persona elige dónde (recomendado: `C:/dev/{{ org_name }}` en
+Windows, `~/dev/{{ org_name }}` en macOS/Linux; nunca dentro de OneDrive,
+Dropbox ni iCloud). **Todas las rutas de estos archivos son relativas a esa
+carpeta**, con `/`.
+
+Estos archivos se versionan en el repo de documentación, en `docs/workspace/`,
+y se cambian con un MR/PR ahí, nunca editando la copia de la raíz. Se aplican
+con `docs/workspace/bootstrap` (ver `docs/workspace/README.md`).
 
 ## Mapa
 
 | Carpeta | Qué es |
 |---|---|
-| `backend\protos` | Contratos gRPC. Todo cambio de API empieza acá |
-| `backend\api-gateway` | Única entrada HTTP pública |
-| `backend\<dominio>-service` | Microservicios Go (gRPC, Postgres, un schema cada uno) |
-| `frontend\<app>` | Apps Angular |
+| `backend/protos` | Contratos gRPC. Todo cambio de API empieza acá |
+| `backend/api-gateway` | Única entrada HTTP pública |
+| `backend/<dominio>-service` | Microservicios Go (gRPC, Postgres, un schema cada uno) |
+| `frontend/<app>` | Apps Angular |
 | `docs` | Issues, ADRs y runbooks. **Fuente de verdad** de qué hay que hacer y por qué |
 | `tools` | Scripts y migraciones de datos |
-| `worktrees\issue-<n>` | Donde se trabaja (ver abajo) |
+| `worktrees/issue-<n>` | Donde se trabaja (ver abajo) |
 
 <!-- Completar: dominios de negocio, quién consume a quién, ambientes (QA/prod) -->
 
 ## Cómo se trabaja
 
-1. **Todo trabajo tiene un issue** en `docs\contenido\issues\<n>-<slug>\issue.md`
+1. **Todo trabajo tiene un issue** en `docs/contenido/issues/<n>-<slug>/issue.md`
    (se crea con `make nuevo TIPO=issue` dentro de `docs`).
 2. **Orden de un cambio que cruza capas:** protos → micro → api-gateway → front.
-3. **Nunca se trabaja en la copia principal de un repo** (`backend\<repo>`):
+3. **Nunca se trabaja en la copia principal de un repo** (`backend/<repo>`):
    se queda en `main` y limpia. Se crea un worktree por repo tocado:
-   ```powershell
-   git -C backend\<repo> worktree add ..\..\worktrees\issue-<n>\<repo> -b feat/issue-<n>-<slug>
+
+   ```bash
+   git -C backend/<repo> worktree add ../../worktrees/issue-<n>/<repo> -b feat/issue-<n>-<slug>
    ```
+
 4. **Una sesión de agente por issue**, no por repo. La sesión trabaja sólo dentro
-   de `worktrees\issue-<n>\`.
+   de `worktrees/issue-<n>/`.
 5. **Cada sesión escribe únicamente la carpeta de su issue** en `docs`
-   (`contenido\issues\<n>-*\`). Los índices de `contenido\_generado\` los
+   (`contenido/issues/<n>-*/`). Los índices de `contenido/_generado/` los
    regenera `make generar` (o el CI); nadie los edita a mano.
 6. **Si el diseño no está aprobado, no se programa.** Los diseños son archivos
-   locales en `docs\contenido\disenos\<slug>\` (`diseno.md` + `v1\`, `v2\`…).
+   locales en `docs/contenido/disenos/<slug>/` (`diseno.md` + `v1/`, `v2/`…).
    Se implementa sólo la `version_aprobada` de un diseño `aprobado` que el
    issue nombra en `disenos`; borradores, otras versiones y descartados no son
    referencia. Sin diseño aprobado, la sesión se para y avisa. Aprobar es de una
@@ -58,4 +70,9 @@ la plataforma. Las reglas de cada stack están en `backend\CLAUDE.md` y
 - Ramas: `feat/issue-<n>-<slug>`, `fix/issue-<n>-<slug>`.
 - Commits: `<tipo>(issue-<n>): <qué cambia>`; el porqué largo va en el issue.
 - Fechas siempre absolutas (`2026-10-08`).
-- Nada de secretos en repos ni en `CLAUDE.md`: van en Secret Manager / variables de CI.
+- **Lo que despliega lo hace una persona:** push de tags `qa-v*`, `prod-v*` y
+  `v*` (protos), y el merge a `main` de los repos que despliegan desde `main`
+  (front con Firebase Hosting y el sitio de este repo de docs). Un agente nunca
+  crea ni pushea tags, ni pushea a `main`: propone el comando y lo corre una
+  persona. Detalle por plantilla: `docs/03` §5 de dev-plantillas.
+- Nada de secretos en repos ni en `AGENTS.md` / `CLAUDE.md`: van en Secret Manager / variables de CI.

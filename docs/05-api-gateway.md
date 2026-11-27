@@ -134,6 +134,7 @@ Además del rate limit (OWASP API4):
 ```
 protocols:        [rest, graphql]      # multiselect; soap = adaptador aparte, documentado
 auth:             firebase | oidc | api-key | ninguno
+mcp:              true | false         # /mcp para agentes (docs/15 §6-8); requiere auth
 rate_limit_store: memory | redis
 deploy_target:    cloud-run | coolify | ninguno
 ci_provider:      gitlab | github

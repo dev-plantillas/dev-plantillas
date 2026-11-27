@@ -109,7 +109,45 @@ Formato único para todo lo que responde el gateway:
 |---|---|
 | `GET /healthz` | liveness (probes, `<binario> healthcheck`) |
 | `GET /readyz` | `grpc.health.v1` de cada upstream (resultado cacheado 5 s) |
-| `GET /openapi.json` | OpenAPI de los protos, si `OPENAPI_ENABLED=true` (default: todo salvo production) |
+| `GET /openapi.json` | OpenAPI de los protos, si `OPENAPI_ENABLED=true` (default: todo salvo production) |{% if mcp %}
+| `POST /mcp` | Servidor MCP para agentes (ver abajo) |
+
+## Herramientas MCP (`/mcp`)
+
+Un método de `routes.yaml` con `mcp:` también es una herramienta:
+
+```yaml
+example.v1.ItemService/GetItem:
+  roles: [items.read, items.admin]
+  mcp:
+    tool: get_item               # verbo_objeto, inglés, snake_case, único
+    description: "Lee un item por id."
+```
+
+- **Misma política que la ruta REST.** La llamada se traduce al request HTTP
+  (variables del path, body y query, con los nombres del `.proto`) y pasa por
+  el mismo mux: auth, roles, rate limit, límites y deadline. Un rol que falta
+  vuelve como resultado con `isError: true` y el error de la API
+  (`PERMISSION_DENIED`), para que el agente sepa qué pasó.
+- **`/mcp` pide credencial**: la misma de la API (`Authorization: Bearer` o
+  `X-API-Key`). Sin ella, 401.
+- **Esquema de entrada** generado desde el mensaje de request; los campos del
+  path son obligatorios. **Anotaciones** desde el verbo: GET = sólo lectura
+  (el cliente no pide confirmación), POST = no destructivo, DELETE =
+  destructivo.
+- **Una herramienta por caso de uso**, con descripción corta: se paga en tokens
+  en cada sesión. Respuestas de más de 256 KiB se cortan con un error que pide
+  paginar.
+- **Auditoría:** una línea `mcp tool` por llamada con herramienta, ruta,
+  `user_id`, status y duración.
+
+Probarlo con Claude Code (`.mcp.json` del repo que lo consume, el token sale
+del entorno de cada persona):
+
+```json
+{ "mcpServers": { "{{ repo_name }}": { "type": "http", "url": "https://<host>/mcp",
+  "headers": { "Authorization": "Bearer ${API_TOKEN}" } } } }
+```{% endif %}
 
 ## Logs
 

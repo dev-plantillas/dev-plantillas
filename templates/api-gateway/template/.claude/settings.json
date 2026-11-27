@@ -44,7 +44,11 @@
       "Bash(pre-commit run:*)",
       "Bash(gitleaks git:*)",
       "Bash(gitleaks dir:*)",
-      "Bash(sh scripts/verificar-titulo.sh:*)"
+      "Bash(sh scripts/verificar-titulo.sh:*)",
+      "mcp__tracker__list_issues",
+      "mcp__tracker__get_issue",
+      "mcp__tracker__next_issue",
+      "mcp__tracker__report_status"
     ],
     "deny": [
       "Read(./.env)",

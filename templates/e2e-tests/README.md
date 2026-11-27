@@ -27,7 +27,7 @@ Este README y `copier.yml` no se copian al proyecto; el contenido vive en
 ├── esquemas/registro.schema.json
 ├── docs/                           # usuarios-de-prueba, registro, disparo, ci, robustez-y-carga, ejemplos/ (disparo desde un servicio)
 ├── .github/workflows/{ci,e2e}.yml | .gitlab-ci.yml, plantilla de PR/MR
-└── CLAUDE.md, README.md, .claude/settings.json, package.json, tsconfig.json
+└── AGENTS.md, README.md, CLAUDE.md, .claude/settings.json, .mcp.json, package.json, tsconfig.json
 ```
 
 ## Generar
@@ -44,7 +44,7 @@ npm run typecheck && npm run listar
 
 | Pregunta | Default | Uso |
 |---|---|---|
-| `repo_name`, `descripcion` | `e2e-tests` | package.json, README, CLAUDE.md |
+| `repo_name`, `descripcion` | `e2e-tests` | package.json, README, AGENTS.md |
 | `ci_provider` | `gitlab` | `.gitlab-ci.yml` o `.github/workflows/` |
 | `dueño` | `@mi-org/qa` | `CODEOWNERS` y `SECURITY.md` (`@usuario` o `@org/equipo`; base común, `docs/10` de dev-plantillas) |
 | `docs_repo` | vacío | URL del repo de docs: la plantilla de MR/PR enlaza la carpeta del issue ahí |

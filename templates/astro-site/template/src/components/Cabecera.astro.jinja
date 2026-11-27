@@ -11,6 +11,7 @@ interface Props {
 
 const { idioma{% if i18n %}, alternativas{% endif %} } = Astro.props
 const actual = Astro.url.pathname
+{%- if blog or ent %}
 const enlaces = [
   { href: ruta(idioma, '/'), texto: t(idioma, 'nav.inicio') },
 {%- if blog %}
@@ -20,6 +21,10 @@ const enlaces = [
   { href: ruta(idioma, '/catalogo/'), texto: t(idioma, 'nav.catalogo') },
 {%- endif %}
 ]
+{%- else %}
+{#- Un solo enlace: prettier deja el array en una línea. #}
+const enlaces = [{ href: ruta(idioma, '/'), texto: t(idioma, 'nav.inicio') }]
+{%- endif %}
 ---
 
 <header class="cabecera">

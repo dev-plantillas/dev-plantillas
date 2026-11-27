@@ -32,7 +32,7 @@ resto se copia tal cual.
 ├── scripts/android-sdk.sh    SDK mínimo para CI/Docker · scripts/release-notes.sh (CHANGELOG -> Play)
 ├── .gitlab-ci.yml | .github/workflows/{ci,release,rollout}.yml + plantilla de MR/PR
 ├── docs/                     ci-cd, play-console, firebase|auth, app-check-gateway, protos (grpc), baseline-profile, kmp
-└── CLAUDE.md (≤120 líneas), .claude/settings.json, README.md, CHANGELOG.md
+└── AGENTS.md (≤120 líneas), CLAUDE.md, .claude/settings.json, .mcp.json, README.md, CHANGELOG.md
 ```
 
 Las rutas Kotlin siguen el paquete (`src/main/kotlin/<com/miorg/miapp>/core/...`).

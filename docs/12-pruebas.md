@@ -21,7 +21,7 @@ explorar, cuestionar los criterios y juzgar la experiencia.
 | **5. Producción** (tag `prod-v*`) | Responsable del release | Guard de migraciones; deploy; **smoke en prod**; rollback si el smoke falla | Aprobación del release |
 | **6. Después** | Todos | Monitoreo y alertas (`docs` de observabilidad) | Un bug que llega a producción → issue + test que lo reproduce |
 
-**Definición de terminado** de un issue (ya en `workspace/CLAUDE.md`, ampliada):
+**Definición de terminado** de un issue (ya en el `AGENTS.md` de plataforma, `docs/workspace/`, ampliada):
 tests de sus escenarios en verde en el MR, suite e2e verde en QA, aceptación de
 QA registrada en la sección Verificación del issue.
 
@@ -160,7 +160,7 @@ e2e-tests/
 
 ## 8. Orden de construcción
 
-1. Este estándar en `workspace/CLAUDE.md` y en las plantillas de issue y de MR/PR
+1. Este estándar en el `AGENTS.md` de plataforma (`docs/workspace/`) y en las plantillas de issue y de MR/PR
    (escenarios con identificador, checklist de tests).
 2. Plantilla `e2e-tests` con Playwright (UI + API) y el registro de casos de uso.
 3. Integración con `docs` (página de estado por escenario y regla de `validar`).

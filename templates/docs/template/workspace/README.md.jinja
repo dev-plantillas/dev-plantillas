@@ -1,0 +1,68 @@
+# Workspace de {{ org_name }}
+
+Cómo armar la carpeta de trabajo en una máquina nueva, igual para todo el
+equipo. Las rutas de toda la documentación y de los `AGENTS.md` / `CLAUDE.md`
+son **relativas a la raíz del workspace**, así que funcionan en cualquier
+máquina y sistema operativo.
+
+## Qué es el workspace
+
+```text
+<raíz>/                       C:/dev/{{ org_name }}  o  ~/dev/{{ org_name }}
+├── CLAUDE.md, AGENTS.md      ← generados por bootstrap desde docs/workspace/
+├── docs/                     ← este repo
+├── backend/
+│   ├── CLAUDE.md, AGENTS.md  ← generados
+│   └── <repo>/
+├── frontend/
+│   ├── CLAUDE.md, AGENTS.md  ← generados
+│   └── <app>/
+└── worktrees/                ← donde se trabaja: worktrees/issue-<n>/<repo>
+```
+
+**Nunca dentro de OneDrive, Dropbox ni iCloud**: bloquean `.git`, dejan
+carpetas de sólo lectura y suben `.env` y credenciales a la nube. Los scripts
+se niegan a correr ahí.
+
+## Arrancar en una máquina nueva
+
+Windows (PowerShell):
+
+```powershell
+git clone {{ docs_repo or (url_org ~ '/docs') }}.git C:\dev\{{ org_name }}\docs
+C:\dev\{{ org_name }}\docs\workspace\bootstrap.ps1
+```
+
+macOS / Linux (o Git Bash):
+
+```bash
+git clone {{ docs_repo or (url_org ~ '/docs') }}.git ~/dev/{{ org_name }}/docs
+bash ~/dev/{{ org_name }}/docs/workspace/bootstrap.sh
+```
+
+El script clona los repos de `repos.txt` que falten y genera los archivos de
+contexto de la raíz, `backend/` y `frontend/`. Es idempotente: no toca un repo
+que ya existe.
+
+## Qué hay acá
+
+| Archivo | Qué es |
+|---|---|
+| `AGENTS.md` | Reglas de la plataforma: mapa, cómo se trabaja, convenciones |
+| `CLAUDE.md` | Importa `AGENTS.md` y agrega lo propio de Claude Code |
+| `backend/AGENTS.md` | Convenciones comunes del backend |
+| `frontend/AGENTS.md` | Convenciones comunes del front |
+| `repos.txt` | Repos del workspace y su carpeta |
+| `bootstrap.ps1`, `bootstrap.sh` | Arman o actualizan el workspace |
+
+## Cómo se cambian
+
+1. Se editan **acá** (`docs/workspace/`), en el worktree de un issue, con MR/PR.
+2. Después del merge, cada persona hace `git -C docs pull` y vuelve a correr
+   `bootstrap`. Los `CLAUDE.md` de la raíz importan estos archivos directamente
+   (`@docs/workspace/CLAUDE.md`); los `AGENTS.md` (para Codex, que no sigue
+   imports) son copias que refresca `bootstrap`.
+3. Nunca se editan los `CLAUDE.md` / `AGENTS.md` de la raíz, `backend/` o
+   `frontend/`: los pisa `bootstrap`.
+4. Un repo nuevo se agrega a `repos.txt` y al mapa de `AGENTS.md` en el mismo
+   MR/PR.

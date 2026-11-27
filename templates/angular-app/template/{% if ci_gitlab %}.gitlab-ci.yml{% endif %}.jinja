@@ -240,7 +240,7 @@ image:prod:
     - test -n "$COOLIFY_TOKEN" || (echo "Falta la variable COOLIFY_TOKEN para este environment" && exit 1)
     - apk add --no-cache curl
     - >-
-      curl -fsS "$COOLIFY_URL/api/v1/deploy?uuid=$COOLIFY_RESOURCE_UUID&force=false"
+      curl -fsS -X POST "$COOLIFY_URL/api/v1/deploy?uuid=$COOLIFY_RESOURCE_UUID&force=false"
       -H "Authorization: Bearer $COOLIFY_TOKEN"
 
 deploy:qa:

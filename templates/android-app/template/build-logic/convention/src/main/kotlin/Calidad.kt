@@ -9,7 +9,7 @@ import org.jlleitschuh.gradle.ktlint.KtlintExtension
 /**
  * ktlint (formato, con las reglas de Compose) + detekt (análisis estático) en
  * cada módulo. Android Lint lo agrega AGP. Sin baselines: el proyecto arranca
- * limpio y se mantiene así (CLAUDE.md).
+ * limpio y se mantiene así (AGENTS.md).
  */
 internal fun Project.configureQuality() {
     pluginManager.apply("org.jlleitschuh.gradle.ktlint")

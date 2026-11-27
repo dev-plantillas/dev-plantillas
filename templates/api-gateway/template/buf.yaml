@@ -1,6 +1,6 @@
 # Módulo buf del proto LOCAL de ejemplo (proto/). Cuando el gateway pase a usar
 # el repo de protos compartido, borrá este archivo, buf.lock, buf.gen.yaml,
-# proto/ y gen/ (ver CLAUDE.md).
+# proto/ y gen/ (ver AGENTS.md).
 version: v2
 modules:
   - path: proto

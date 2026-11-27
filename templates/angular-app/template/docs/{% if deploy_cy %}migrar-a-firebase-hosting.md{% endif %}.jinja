@@ -78,7 +78,7 @@ Lo esperable en un proyecto sin modificaciones a mano:
 - **Desaparecen**: `Dockerfile`, `Caddyfile`, `.dockerignore`, `docker-compose.yml`
   y esta guía (`docs/migrar-a-firebase-hosting.md`).
 - **Cambian**: {% if ci_provider == 'gitlab' %}`.gitlab-ci.yml`{% else %}`.github/workflows/deploy.yml`{% endif %}, `package.json` (scripts `deploy:qa` / `deploy:prod` de emergencia),
-  `docs/ci-cd-setup.md` (ahora con el setup de WIF), `README.md`, `CLAUDE.md`
+  `docs/ci-cd-setup.md` (ahora con el setup de WIF), `README.md`, `AGENTS.md`
   y `.copier-answers.yml`.
 
 Si un archivo que **sigue existiendo** se había tocado a mano, Copier conserva el
