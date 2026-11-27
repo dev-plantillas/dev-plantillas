@@ -40,8 +40,8 @@ instalar: ## Crea .venv/ e instala requirements.txt
 	@if [ -x .venv/Scripts/python.exe ]; then p=.venv/Scripts/python.exe; else p=.venv/bin/python; fi; \
 	  $$p -m pip install --quiet --upgrade pip && $$p -m pip install --quiet -r requirements.txt && echo "listo: $$p"
 
-nuevo: ## TIPO=issue|plan|adr|runbook|postmortem|release|servicio TITULO="..." [REPOS=a,b ISSUE= VERSION= ...]
-	@test -n "$(TIPO)" || { echo 'uso: make nuevo TIPO=issue|plan|adr|runbook|postmortem|release|servicio TITULO="..."'; exit 2; }
+nuevo: ## TIPO=issue|plan|diseno|adr|runbook|postmortem|release|servicio TITULO="..." [REPOS=a,b ISSUE= VERSION= ...]
+	@test -n "$(TIPO)" || { echo 'uso: make nuevo TIPO=issue|plan|diseno|adr|runbook|postmortem|release|servicio TITULO="..."'; exit 2; }
 	@$(PY) scripts/nuevo.py "$(TIPO)" --titulo "$(TITULO)" --repos "$(REPOS)" --area "$(AREA)" \
 	  --prioridad "$(PRIORIDAD)" --clase "$(CLASE)" --version "$(VERSION)" --fecha "$(FECHA)" \
 	  $(if $(ISSUE),--issue "$(ISSUE)")

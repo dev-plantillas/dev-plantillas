@@ -9,7 +9,7 @@ vive acá.
 
 | Junto al código (cada repo) | Este repo |
 |---|---|
-| `README.md`, `CLAUDE.md`, `docs/` de uso y deploy, `CHANGELOG.md` | Issues, ADRs, arquitectura, fichas de servicios, runbooks, postmortems, casos de uso, releases |
+| `README.md`, `CLAUDE.md`, `docs/` de uso y deploy, `CHANGELOG.md` | Issues, diseños, ADRs, arquitectura, fichas de servicios, runbooks, postmortems, casos de uso, releases |
 
 La ficha de un servicio es corta y **enlaza** al README del repo; no lo duplica.
 
@@ -38,6 +38,7 @@ La ficha de un servicio es corta y **enlaza** al README del repo; no lo duplica.
 |---|---|
 | `make nuevo TIPO=issue TITULO="..." [REPOS=a,b] [PRIORIDAD=alta] [CLASE=bug]` | Crea `issues/<nnn>-<slug>/issue.md` |
 | `make nuevo TIPO=plan ISSUE=42` | Crea `plan.md` en la carpeta del issue y lo enlaza |
+| `make nuevo TIPO=diseno TITULO="..." [REPOS=front]` | Crea `disenos/<slug>/diseno.md` y `v1/` |
 | `make nuevo TIPO=adr TITULO="..."` | Crea `adr/<nnnn>-<slug>.md` |
 | `make nuevo TIPO=runbook TITULO="..." REPOS=a` | Crea `runbooks/<slug>.md` |
 | `make nuevo TIPO=postmortem TITULO="..." REPOS=a` | Crea `postmortems/<fecha>-<slug>.md` |
@@ -63,10 +64,42 @@ logs) puede ir en la misma carpeta.
 | `repos` | Repos que toca, **en orden de ejecución** (ej. protos → servicio → api-gateway → front) |
 | `resuelto` | `null` hasta que se resuelve; después la fecha |
 | `relacionados` | Números de otros issues |
+| `disenos` | (opcional) Diseños que implementa: carpetas de `disenos/`, aprobados |
 
 Para pasar a `en-curso`, `area` y `repos` tienen que estar completos. Para pasar
 a `resuelto`, la sección **Verificación** tiene que tener fecha, comandos y
-commits (la escribe `/verificar`).
+commits (la escribe `/verificar`). Si el issue tiene `disenos`, para pasar a
+`en-curso` todos tienen que estar aprobados.
+
+## Diseños
+
+Un diseño por pantalla o flujo: `disenos/<slug>/diseno.md` más una carpeta por
+versión (`v1/`, `v2/`…) con los archivos **locales** (HTML, PNG, SVG). Nada de
+enlaces a herramientas externas como fuente de verdad: lo que se programa está
+versionado en este repo.
+
+| Campo | Valores |
+|---|---|
+| `estado` | `borrador` · `en-revision` · `aprobado` · `descartado` |
+| `repos` | Repos de front que lo implementan (nombre exacto, con ficha) |
+| `version_aprobada` | `null` hasta que se aprueba; después la carpeta que se programa (`v2`) |
+| `aprobado_por` / `aprobado` | Quién y cuándo (fecha absoluta); `null` si no está aprobado |
+
+**Regla: si no está aprobado, no se programa.** Y de un diseño aprobado sólo
+se programa su `version_aprobada`: las otras versiones son historia, no
+referencia. Así un agente nunca elige entre variantes ni implementa una
+exploración que nadie autorizó.
+
+- El issue que lo implementa lo nombra en `disenos: [<slug>]`. `make validar`
+  falla si un issue `en-curso` o `resuelto` apunta a un diseño que no está
+  aprobado, o si la versión aprobada no existe o está vacía.
+- Una versión aprobada no se edita. Si hay cambios, se crea `v3/`, el diseño
+  vuelve a `en-revision` (con `version_aprobada`, `aprobado_por` y `aprobado`
+  en `null`) y se aprueba otra vez.
+- Las exploraciones que no van se pasan a `descartado`; no se borran.
+- Quien aprueba cambia `estado`, `version_aprobada`, `aprobado_por` y
+  `aprobado` en un MR propio (`docs(diseno): aprobar <slug> v2`), no dentro
+  del MR de un issue.
 
 ## ADRs
 
@@ -84,7 +117,7 @@ archivo de estado compartido que actualizar.
 
 | Paso | Falla si |
 |---|---|
-| `make validar` | Falta un campo, valor fuera de la lista, id duplicado, repo sin ficha, `resuelto` sin Verificación, estilo Markdown |
+| `make validar` | Falta un campo, valor fuera de la lista, id duplicado, repo sin ficha, `resuelto` sin Verificación, issue en curso con un diseño sin aprobar, estilo Markdown |
 | `make generar` + `git diff --exit-code` | `_generado/` desactualizado o editado a mano |
 | `make construir` | Enlace interno roto |
 | lychee (sólo rama principal) | Enlace externo roto |

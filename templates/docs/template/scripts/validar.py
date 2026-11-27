@@ -10,6 +10,9 @@ Comprueba:
   - que todo repo mencionado (area, repos, servicios, depende_de, ...) tenga
     ficha en contenido/servicios/, y que los issues/ADRs referenciados existan;
   - que un issue `resuelto` tenga la sección «Verificación» completa;
+  - diseños: carpeta kebab con diseno.md, versiones v1, v2, ...; un diseño
+    `aprobado` apunta a una versión que existe y tiene archivos; un issue que
+    pasa a `en-curso` o `resuelto` sólo puede implementar diseños aprobados;
   - sólo si REGISTRO_E2E apunta al registro de la suite e2e (scripts/escenarios.py):
     que un issue `resuelto` no tenga escenarios CU-<id>-<n> sin test o que no
     estén en verde (✅) en el registro.
@@ -38,8 +41,11 @@ from comun import (
     RE_ARCHIVO_RELEASE,
     RE_CARPETA_ISSUE,
     RE_KEBAB,
+    RE_VERSION_DISENO,
     Documento,
+    archivos_version,
     cargar_documentos,
+    carpetas_diseno,
     configurar_salida,
     carpetas_issue,
     numero_carpeta,
@@ -152,6 +158,26 @@ def validar_nombres(docs: list[Documento], rep: Reporte) -> None:
         if not (carpeta / "issue.md").is_file():
             rep.error(rel, "issue.md", "falta: cada carpeta de issue tiene su issue.md (crear con make nuevo TIPO=issue)")
 
+    base_disenos = CONTENIDO / "disenos"
+    if base_disenos.is_dir():
+        for p in sorted(base_disenos.iterdir()):
+            if p.is_file() and p.name != "index.md":
+                rel = p.relative_to(RAIZ).as_posix()
+                rep.error(rel, "ubicación", "los diseños van en una carpeta: disenos/<slug>/diseno.md + v1/, v2/, ...")
+    for carpeta in carpetas_diseno():
+        rel = carpeta.relative_to(RAIZ).as_posix()
+        if not RE_KEBAB.match(carpeta.name):
+            rep.error(rel, "carpeta", "nombre inválido: <slug-kebab>, ej. detalle-de-pedido")
+        if not (carpeta / "diseno.md").is_file():
+            rep.error(rel, "diseno.md", "falta: cada carpeta de diseño tiene su diseno.md (crear con make nuevo TIPO=diseno)")
+        for p in sorted(carpeta.iterdir()):
+            if p.is_dir() and not RE_VERSION_DISENO.match(p.name):
+                rep.error(
+                    p.relative_to(RAIZ).as_posix(),
+                    "carpeta",
+                    "las versiones se llaman v1, v2, ...; lo demás va dentro de una versión",
+                )
+
     for d in docs:
         if d.error:
             continue
@@ -211,6 +237,8 @@ def validar_referencias(docs: list[Documento], rep: Reporte) -> None:
     fichas = {d.meta.get("repo") for d in por_tipo(docs, "servicio")}
     issues = {d.meta.get("id") for d in por_tipo(docs, "issue")}
     adrs = {d.meta.get("id") for d in por_tipo(docs, "adr")}
+    carpetas_disenos = {c.name for c in carpetas_diseno()}
+    disenos = {d.ruta.parent.name: d for d in por_tipo(docs, "diseno")}
 
     def repo(d: Documento, campo: str, nombre) -> None:
         if isinstance(nombre, str) and nombre not in fichas:
@@ -242,8 +270,29 @@ def validar_referencias(docs: list[Documento], rep: Reporte) -> None:
                     rep.error(d.rel, "relacionados", "un issue no se relaciona consigo mismo")
             if m.get("estado") == "abierto" and not m.get("repos"):
                 rep.aviso(d.rel, "repos", "vacío: completalo (en orden de ejecución) antes de pasar a en-curso")
+            for slug in _lista(m.get("disenos")):
+                diseno = disenos.get(slug) if isinstance(slug, str) else None
+                if isinstance(slug, str) and slug not in carpetas_disenos:
+                    rep.error(d.rel, "disenos", f'"{slug}" no existe en contenido/disenos/ (crear con make nuevo TIPO=diseno)')
+                elif diseno is not None and m.get("estado") in ("en-curso", "resuelto") and diseno.meta.get("estado") != "aprobado":
+                    rep.error(
+                        d.rel,
+                        "disenos",
+                        f'"{slug}" está {diseno.meta.get("estado")}: un issue {m["estado"]} sólo implementa '
+                        f"diseños aprobados (aprobarlo o sacarlo de disenos y volver el issue a abierto)",
+                    )
         elif d.tipo == "plan":
             pass
+        elif d.tipo == "diseno":
+            for r in _lista(m.get("repos")):
+                repo(d, "repos", r)
+            version = m.get("version_aprobada")
+            if m.get("estado") == "aprobado" and isinstance(version, str) and RE_VERSION_DISENO.match(version):
+                carpeta = d.ruta.parent / version
+                if not carpeta.is_dir():
+                    rep.error(d.rel, "version_aprobada", f"{version} no existe: falta la carpeta {carpeta.relative_to(RAIZ).as_posix()}/")
+                elif not archivos_version(carpeta):
+                    rep.error(d.rel, "version_aprobada", f"{version} está vacía: no hay nada que programar")
         elif d.tipo == "adr":
             ref(d, "reemplaza", m.get("reemplaza"), adrs, "el ADR")
             ref(d, "reemplazado_por", m.get("reemplazado_por"), adrs, "el ADR")

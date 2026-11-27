@@ -4,8 +4,8 @@
     python scripts/generar.py              # escribe los archivos
     python scripts/generar.py --comprobar  # no escribe; exit 1 si están desactualizados
 
-Archivos: issues-por-estado.md, issues-por-repo.md, adr.md, servicios.md y
-rollout.md. La salida es determinista (orden estable, sin fecha de generación):
+Archivos: issues-por-estado.md, issues-por-repo.md, disenos.md, adr.md,
+servicios.md y rollout.md. La salida es determinista (orden estable, sin fecha de generación):
 el CI corre `make generar` + `git diff --exit-code` y falla si alguien editó un
 generado a mano o se olvidó de regenerar.
 
@@ -25,7 +25,9 @@ import sys
 
 import escenarios
 from comun import (
+    CONTENIDO,
     ESTADOS_ABIERTOS,
+    ESTADOS_DISENO,
     GENERADO,
     PRIORIDADES,
     RAIZ,
@@ -34,6 +36,7 @@ from comun import (
     configurar_salida,
     por_tipo,
     version_tupla,
+    versiones_diseno,
 )
 
 RESUELTOS_RECIENTES = 20
@@ -100,6 +103,7 @@ class Contexto:
             key=lambda d: (str(d.meta.get("fecha", "")), version_tupla(d.meta.get("version"))),
         )
         self.fichas = {d.meta["repo"]: d for d in self.servicios}
+        self.disenos = sorted(por_tipo(docs, "diseno"), key=lambda d: d.ruta.parent.name)
 
     def repo(self, nombre: str) -> str:
         ficha = self.fichas.get(nombre)
@@ -204,6 +208,47 @@ def issues_por_repo(ctx: Contexto) -> str:
                 ]
             )
         salida += tabla(["#", "Título", "Estado", "Prioridad", "Paso"], filas)
+    return "\n".join(salida)
+
+
+def disenos(ctx: Contexto) -> str:
+    salida = encabezado(
+        "Diseños",
+        "Sale del frontmatter de `disenos/<slug>/diseno.md`. **Sólo se programa la "
+        "versión aprobada de un diseño aprobado**; borradores, diseños en revisión y "
+        "descartados no son referencia para implementar.",
+    )
+    if not ctx.disenos:
+        return "\n".join(salida + ["_Todavía no hay diseños._", ""])
+    usos: dict[str, list[Documento]] = {}
+    for i in ctx.issues:
+        for slug in i.meta.get("disenos") or []:
+            usos.setdefault(slug, []).append(i)
+    conteo = {e: sum(1 for d in ctx.disenos if d.meta.get("estado") == e) for e in ESTADOS_DISENO}
+    salida += [f"Total: {len(ctx.disenos)} · " + " · ".join(f"{e}: {n}" for e, n in conteo.items()), ""]
+    titulos = {"aprobado": "Aprobados", "en-revision": "En revisión", "borrador": "Borradores", "descartado": "Descartados"}
+    for estado in ("aprobado", "en-revision", "borrador", "descartado"):
+        lista = [d for d in ctx.disenos if d.meta.get("estado") == estado]
+        salida += [f"## {titulos[estado]} ({len(lista)})", ""]
+        if not lista:
+            salida += ["_Ninguno._", ""]
+            continue
+        filas = []
+        for d in lista:
+            slug = d.ruta.parent.name
+            version = d.meta.get("version_aprobada")
+            filas.append(
+                [
+                    f"[{celda(d.meta.get('titulo'))}](../{d.rel_contenido})",
+                    f"`{slug}`",
+                    f"**{version}**" if version else VACIO,
+                    celda(versiones_diseno(CONTENIDO / "disenos" / slug)),
+                    ctx.repos(d.meta.get("repos")),
+                    ", ".join(enlace_issue(i) for i in usos.get(slug, [])) or VACIO,
+                    celda(f"{d.meta.get('aprobado')} ({d.meta.get('aprobado_por')})" if d.meta.get("aprobado") else None),
+                ]
+            )
+        salida += tabla(["Diseño", "Carpeta", "Se programa", "Versiones", "Repos", "Issues", "Aprobado"], filas)
     return "\n".join(salida)
 
 
@@ -395,6 +440,7 @@ ESCENARIOS = "escenarios.md"
 GENERADORES = {
     "issues-por-estado.md": issues_por_estado,
     "issues-por-repo.md": issues_por_repo,
+    "disenos.md": disenos,
     "adr.md": adr,
     "servicios.md": servicios,
     "rollout.md": rollout,

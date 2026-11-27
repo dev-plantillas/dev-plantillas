@@ -11,6 +11,7 @@ releases. No hay código de producto acá. Lo que cambia junto con el código
 |---|---|
 | `contenido/issues/<nnn>-<slug>/issue.md` | Un issue: qué, por qué, criterios, repos en orden, verificación |
 | `contenido/issues/<nnn>-<slug>/plan.md` | (opcional) Plan o prompt para el agente que trabaja el issue |
+| `contenido/disenos/<slug>/` | Un diseño: `diseno.md` (estado, versión aprobada) + `v1/`, `v2/`… con los archivos |
 | `contenido/adr/NNNN-<slug>.md` | Decisiones de arquitectura |
 | `contenido/servicios/<repo>.md` | Ficha de cada repo: el nombre del archivo es el nombre exacto del repo |
 | `contenido/runbooks/`, `postmortems/`, `casos-de-uso/`, `releases/` | Operación |
@@ -46,12 +47,19 @@ releases. No hay código de producto acá. Lo que cambia junto con el código
    verde, y se commitea lo que cambie `make generar` (el CI falla si
    `_generado/` no coincide). Conflicto en `_generado/` al rebasar: se corre
    `make generar` otra vez; nunca se resuelve a mano.
+10. **Diseños: si no está aprobado, no se programa.** Sólo se implementa la
+    `version_aprobada` de un diseño con `estado: aprobado`, la que nombra el
+    issue en `disenos`. No se abren otras versiones, ni borradores, ni
+    diseños en revisión o descartados como referencia. Si el issue necesita una
+    pantalla sin diseño aprobado, se para y se avisa: no se inventa la
+    interfaz. Un agente nunca aprueba un diseño ni edita una versión aprobada.
 
 ## Comandos
 
 ```bash
 make nuevo TIPO=issue TITULO="Descuento por pedido con tope" REPOS=protos,orders-service
 make nuevo TIPO=plan ISSUE=42
+make nuevo TIPO=diseno TITULO="Detalle de pedido" REPOS=admin-web
 make nuevo TIPO=adr TITULO="Rate limit en Redis"
 make nuevo TIPO=runbook TITULO="Rollback de un servicio" REPOS=orders-service
 make nuevo TIPO=release VERSION=1.4.0
@@ -78,6 +86,7 @@ repos: [protos, orders-service, api-gateway]   # en orden de ejecución
 creado: 2026-10-09
 resuelto: null               # fecha cuando pasa a resuelto
 relacionados: [37]
+disenos: [detalle-de-pedido]  # (opcional) diseños aprobados que implementa
 ```
 
 Secciones: Contexto · Comportamiento esperado · Criterios de aceptación ·

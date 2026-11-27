@@ -10,7 +10,9 @@ issue  →  worktrees  →  sesión  →  verificar  →  MR  →  cerrar
 ```
 
 1. **Issue** en `docs\issues\<n>-<slug>.md`: qué, por qué, criterios de aceptación,
-   repos afectados.
+   repos afectados. Si toca pantallas, nombra en `disenos` los diseños que
+   implementa; **si un diseño no está aprobado, no se programa** (ver
+   `06-documentacion.md` › Diseño).
 2. **Worktrees**, uno por repo que toca:
    ```powershell
    cd C:\dev\<org>
@@ -40,7 +42,7 @@ issue  →  worktrees  →  sesión  →  verificar  →  MR  →  cerrar
 - **Implementador**: la sesión del issue.
 - **Revisor**: `/code-review` en el worktree, o una segunda sesión de sólo lectura
   sobre el diff del MR. Nunca edita.
-- **Humano**: aprueba el plan, aprueba el MR, aplica migraciones a prod y taggea `prod-v*`.
+- **Humano**: aprueba los diseños, aprueba el plan, aprueba el MR, aplica migraciones a prod y taggea `prod-v*`.
 
 ## Crear un servicio o app nuevos
 

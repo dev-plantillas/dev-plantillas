@@ -56,6 +56,16 @@ y `_authToken=${NODE_AUTH_TOKEN}`):
 El CI de `dev-plantillas` instala vrb con el secret `NPM_TOKEN` del repo; sin él, los
 jobs de `angular-app` y `astro-site` generan la plantilla y avisan en vez de compilar.
 
+### Diseños: si no está aprobado, no se programa
+
+Las pantallas se diseñan con archivos locales en el repo de documentación
+(`docs/contenido/disenos/<slug>/`: `diseno.md` + `v1/`, `v2/`…). Un front
+implementa **sólo** la `version_aprobada` de un diseño `aprobado`, el que nombra
+el issue en `disenos`; los borradores y las demás versiones no son referencia, y
+sin diseño aprobado no se inventa la interfaz. Lo hace cumplir `make validar`
+del repo `docs`, y la regla está en el `CLAUDE.md` de `angular-app`,
+`astro-site` y `android-app`. Detalle: `06-documentacion.md` › Diseño.
+
 ## 2. `astro-site`: arquitectura
 
 ```

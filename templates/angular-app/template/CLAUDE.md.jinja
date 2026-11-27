@@ -49,6 +49,11 @@ Otros: `src/environments` (dev/qa/prod), `src/styles` (base global), `src/types`
   `node_modules/@vrojas1015/vrb/design-system/scss/`). Si no existe, se agrega al repo de vrb
   (PR y versión nueva) y aquí se sube la dependencia; nunca colores, fuentes ni componentes
   visuales propios en el SCSS del proyecto.
+- **Pantallas: si el diseño no está aprobado, no se programa.** Una pantalla nueva o un cambio
+  visual se implementa sólo desde la `version_aprobada` de un diseño con `estado: aprobado` en el
+  repo de documentación (`docs/contenido/disenos/<slug>/`), el que nombra el issue en `disenos`. No
+  se abren otras versiones, borradores ni diseños descartados como referencia; si falta el diseño
+  aprobado, se para y se avisa en vez de inventar la interfaz.
 - **Paquetes privados** desde GitHub Packages: `.npmrc` (versionado, sin token) lee
   `NODE_AUTH_TOKEN`. En local `NODE_AUTH_TOKEN=$(gh auth token) npm ci` (scope `read:packages`); en
   el CI, {{ 'la variable CI/CD' if ci_provider == 'gitlab' else 'el secret' }} `NPM_TOKEN`. Nunca un token escrito en `.npmrc`.
