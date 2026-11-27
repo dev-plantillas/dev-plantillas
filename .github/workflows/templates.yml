@@ -293,6 +293,9 @@ jobs:
           curl -fsS http://localhost:8080/ | grep -q 'Documentación de demo'
           curl -fsS http://localhost:8080/issues/001-issue-de-ejemplo/issue/ | grep -q 'class="metadatos"'
           curl -fsS http://localhost:8080/_generado/servicios/ | grep -q 'class="mermaid"'
+          # Prototipos de diseño (los crea el paso «diseños sin aprobar»): origen opaco, la página del diseño no.
+          curl -fsSI http://localhost:8080/disenos/detalle-de-pedido/v1/detalle.html | grep -qi '^content-security-policy: sandbox'
+          if curl -fsSI http://localhost:8080/disenos/detalle-de-pedido/diseno/ | grep -qi '^content-security-policy'; then echo "la página del diseño no debe ir en sandbox"; exit 1; fi
 
   # e2e-tests: genera variantes (auth × CI × web), typecheck, `playwright test
   # --list`, YAML/actionlint, y corre la suite api contra un servidor mínimo que

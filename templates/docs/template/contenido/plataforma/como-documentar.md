@@ -99,7 +99,15 @@ exploración que nadie autorizó.
 - Las exploraciones que no van se pasan a `descartado`; no se borran.
 - Quien aprueba cambia `estado`, `version_aprobada`, `aprobado_por` y
   `aprobado` en un MR propio (`docs(diseno): aprobar <slug> v2`), no dentro
-  del MR de un issue.
+  del MR de un issue. `CODEOWNERS` asigna `contenido/disenos/` a quien aprueba
+  diseños; con la revisión de code owners obligatoria, nadie más puede aprobar.
+- **Datos ficticios siempre** en capturas y prototipos (gitleaks no lee
+  imágenes), y prototipos **autocontenidos**: sin scripts, fuentes ni
+  analítica de terceros.
+- Sin enlaces simbólicos: `make validar` y el build los rechazan, porque MkDocs
+  publicaría el archivo al que apuntan.
+- En el sitio, los archivos de `vN/` se sirven en sandbox (origen opaco): un
+  prototipo no puede leer la documentación ni sus cookies.
 
 ## ADRs
 

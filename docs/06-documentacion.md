@@ -135,6 +135,17 @@ varias variantes o exploraciones y programan cosas que nadie autorizó. Por eso:
 - El sitio marca cada diseño no aprobado con un aviso «No se programa», y en
   uno aprobado enlaza los archivos de la versión que se programa.
 
+**Seguridad de los diseños:**
+
+| Riesgo | Control |
+|---|---|
+| Alguien sin autoridad marca un diseño como `aprobado` | `CODEOWNERS`: `/contenido/disenos/` es de `aprobador_disenos` (pregunta de la plantilla, por defecto el `dueño`). Hay que activar en la rama principal la **revisión obligatoria de code owners** (GitHub: ruleset › *Require review from Code Owners*; GitLab Premium: *Code owner approval*). Sin eso, CODEOWNERS sólo sugiere revisores |
+| El HTML de un prototipo corre JS con el origen del sitio y lee páginas internas | `disenos/<slug>/vN/**` se sirve con `Content-Security-Policy: sandbox allow-scripts allow-forms allow-popups allow-modals` (Caddy y Firebase Hosting): el prototipo corre en un origen opaco, sin acceso a las cookies, al localStorage ni a las demás páginas |
+| Un symlink en `contenido/` publica archivos de la máquina o del runner (MkDocs sigue los enlaces) | `make validar` lo rechaza y el hook de MkDocs corta cualquier build, también el del deploy |
+| HTML en el frontmatter (`titulo`, `aprobado_por`) inyectado en los índices | `generar.py` y el hook escapan el texto del frontmatter |
+| Datos reales en capturas y prototipos | Datos ficticios siempre: gitleaks no lee imágenes. Los prototipos son autocontenidos (sin scripts, fuentes ni analítica de terceros) |
+| Pantallas sin lanzar expuestas | El sitio de `docs` va detrás de autenticación si es interno (§7) |
+
 ### ADR (`adr/NNNN-<titulo>.md`)
 
 ```yaml
@@ -279,6 +290,7 @@ repos_iniciales: [protos, api-gateway]     # crea una ficha por repo
 obsidian:        true | false
 deploy_target:   firebase-hosting | coolify | ninguno
 ci_provider:     gitlab | github
+aprobador_disenos: @mi-org/diseno        # CODEOWNERS de contenido/disenos/ (por defecto, el dueño)
 ```
 
 Contenido inicial generado: `index.md`, `plataforma/` con un mapa de servicios
@@ -305,6 +317,9 @@ las plantillas.
       → `make validar` falla con un mensaje que dice archivo y campo.
 - [ ] Editar a mano `_generado/` → el CI falla.
 - [ ] Un enlace roto → `mkdocs build --strict` falla.
+- [ ] Un symlink en `contenido/` → `make validar` y `mkdocs build` fallan; los
+      archivos de `disenos/<slug>/vN/` se sirven con `CSP: sandbox` y
+      `CODEOWNERS` asigna `contenido/disenos/` a `aprobador_disenos`.
 - [ ] `make nuevo TIPO=diseno` crea `disenos/<slug>/diseno.md` en `borrador`
       con `v1/`; un issue `en-curso` con ese diseño en `disenos` → `make validar`
       falla hasta que se aprueba con una versión que tiene archivos.

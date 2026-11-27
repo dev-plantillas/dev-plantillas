@@ -8,6 +8,8 @@
 - Índices de sección (`runbooks/`, `postmortems/`, `releases/`, `servicios/`,
   `casos-de-uso/`): agrega al final la lista de documentos de la carpeta, así
   ningún documento queda huérfano sin que nadie edite un índice compartido.
+- Corta el build si hay enlaces simbólicos en el contenido (MkDocs publicaría su
+  destino).
 - Casos de uso: si existe `_generado/escenarios.md` (registro e2e configurado,
   ver scripts/escenarios.py), un enlace a la página de estado por escenario.
 """
@@ -15,10 +17,14 @@
 from __future__ import annotations
 
 import html
+import os
 import posixpath
 import re
 import sys
 from pathlib import Path
+from urllib.parse import quote
+
+from mkdocs.exceptions import PluginError
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -106,7 +112,7 @@ def _diseno(markdown: str, meta: dict, slug: str, src: str, files) -> str:
         archivos = archivos_version(CONTENIDO / "disenos" / slug / str(version))
         enlaces = ", ".join(
             f"[{html.escape(a.relative_to(CONTENIDO / 'disenos' / slug).as_posix())}]"
-            f"({a.relative_to(CONTENIDO / 'disenos' / slug).as_posix()})"
+            f"({quote(a.relative_to(CONTENIDO / 'disenos' / slug).as_posix())})"
             for a in archivos
         )
         partes += [
@@ -137,11 +143,22 @@ def _indice(markdown: str, seccion: str, page, files) -> str:
     else:
         docs.sort(key=lambda f: f.src_uri)
     lineas = [
-        f"- [{titulo_markdown(Path(f.abs_src_path)).replace('[', '(').replace(']', ')')}]"
+        f"- [{html.escape(titulo_markdown(Path(f.abs_src_path)), quote=False).replace('[', '(').replace(']', ')')}]"
         f"({posixpath.basename(f.src_uri)})"
         for f in docs
     ]
     return markdown.rstrip("\n") + "\n\n## Documentos\n\n" + "\n".join(lineas) + "\n"
+
+
+def on_pre_build(config):
+    """MkDocs sigue los symlinks de docs_dir y publica su destino: uno que apunte
+    fuera del repo sacaría archivos de la máquina o del runner al sitio. Se corta
+    el build (también el del deploy, que no corre `make validar`)."""
+    for raiz, carpetas, archivos in os.walk(config["docs_dir"]):
+        for nombre in carpetas + archivos:
+            ruta = Path(raiz) / nombre
+            if ruta.is_symlink():
+                raise PluginError(f"enlace simbólico en el contenido, no se publica: {ruta}")
 
 
 def on_page_markdown(markdown, page, config, files):

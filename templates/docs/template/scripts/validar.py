@@ -10,6 +10,7 @@ Comprueba:
   - que todo repo mencionado (area, repos, servicios, depende_de, ...) tenga
     ficha en contenido/servicios/, y que los issues/ADRs referenciados existan;
   - que un issue `resuelto` tenga la sección «Verificación» completa;
+  - que no haya enlaces simbólicos en contenido/ (MkDocs publicaría su destino);
   - diseños: carpeta kebab con diseno.md, versiones v1, v2, ...; un diseño
     `aprobado` apunta a una versión que existe y tiene archivos; un issue que
     pasa a `en-curso` o `resuelto` sólo puede implementar diseños aprobados;
@@ -23,9 +24,11 @@ Cada problema sale como `archivo: campo: problema`. Exit 1 si hay alguno.
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
 from collections import defaultdict
+from pathlib import Path
 
 import jsonschema
 from jsonschema.exceptions import best_match
@@ -216,6 +219,22 @@ def validar_nombres(docs: list[Documento], rep: Reporte) -> None:
                 rep.error(d.rel, "version", f"es {m['version']} pero el archivo es v{mr.group(1)}")
 
 
+def validar_enlaces_simbolicos(rep: Reporte) -> None:
+    """MkDocs sigue los symlinks de docs_dir y publica lo que apuntan: uno que
+    apunte fuera del repo (`~/.ssh/id_ed25519`, `/proc/self/environ`, un `.env`)
+    sacaría archivos de la máquina o del runner del CI al sitio. En contenido/
+    no se permiten."""
+    for raiz, carpetas, archivos in os.walk(CONTENIDO):
+        for nombre in carpetas + archivos:
+            ruta = Path(raiz) / nombre
+            if ruta.is_symlink():
+                rep.error(
+                    ruta.relative_to(RAIZ).as_posix(),
+                    "archivo",
+                    "enlace simbólico: MkDocs publicaría el archivo al que apunta; copiar el archivo real",
+                )
+
+
 def validar_duplicados(docs: list[Documento], rep: Reporte) -> None:
     for tipo in ("issue", "adr"):
         vistos: dict[int, list[Documento]] = defaultdict(list)
@@ -371,6 +390,7 @@ def main() -> int:
     rep = Reporte()
     validar_esquemas(docs, rep)
     validar_nombres(docs, rep)
+    validar_enlaces_simbolicos(rep)
     validar_duplicados(docs, rep)
     validar_referencias(docs, rep)
     validar_verificacion(docs, rep)

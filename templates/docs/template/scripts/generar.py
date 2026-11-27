@@ -21,6 +21,7 @@ Lee sólo documentos con frontmatter válido; los inválidos los reporta
 from __future__ import annotations
 
 import argparse
+import html
 import sys
 
 import escenarios
@@ -58,11 +59,15 @@ def encabezado(titulo: str, descripcion: str) -> list[str]:
 
 
 def celda(valor) -> str:
+    """Texto del frontmatter dentro de una tabla. Se escapa el HTML: MkDocs pasa
+    el HTML crudo tal cual al sitio, y un `titulo` o `aprobado_por` con
+    `<img onerror=…>` sería un XSS para todo el que lea el índice."""
     if valor is None or valor == "" or valor == []:
         return VACIO
     if isinstance(valor, list):
         valor = ", ".join(str(v) for v in valor)
-    return str(valor).replace("|", "\\|").replace("\n", " ").strip()
+    texto = html.escape(str(valor), quote=False)
+    return texto.replace("|", "\\|").replace("\n", " ").strip()
 
 
 def tabla(columnas: list[str], filas: list[list[str]]) -> list[str]:
@@ -107,7 +112,7 @@ class Contexto:
 
     def repo(self, nombre: str) -> str:
         ficha = self.fichas.get(nombre)
-        return f"[{nombre}](../{ficha.rel_contenido})" if ficha else nombre
+        return f"[{celda(nombre)}](../{ficha.rel_contenido})" if ficha else celda(nombre)
 
     def repos(self, nombres, sep: str = ", ") -> str:
         nombres = nombres if isinstance(nombres, list) else []
@@ -428,7 +433,7 @@ def pagina_escenarios(ctx: Contexto, reg: escenarios.Registro) -> str:
         ]
         salida += tabla(
             ["Escenario (etiqueta)", "Estado"],
-            [[reg.ids[c], f"{escenarios.icono(reg.por_clave[c]['estado'])} {reg.por_clave[c]['estado']}"] for c in huerfanos],
+            [[celda(reg.ids[c]), f"{escenarios.icono(reg.por_clave[c]['estado'])} {reg.por_clave[c]['estado']}"] for c in huerfanos],
         )
     else:
         salida += ["_Ninguno._", ""]

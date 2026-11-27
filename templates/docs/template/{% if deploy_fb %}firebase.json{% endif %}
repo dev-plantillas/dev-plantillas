@@ -12,6 +12,10 @@
         "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400" }]
       },
       {
+        "source": "disenos/*/v*/**",
+        "headers": [{ "key": "Content-Security-Policy", "value": "sandbox allow-scripts allow-forms allow-popups allow-modals" }]
+      },
+      {
         "source": "**",
         "headers": [
           { "key": "X-Content-Type-Options", "value": "nosniff" },

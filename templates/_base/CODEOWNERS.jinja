@@ -3,3 +3,10 @@
 # (la última regla que coincide gana), p. ej.:
 #   /migrations/   @mi-org/dba
 * {{ dueño }}
+{%- if aprobador_disenos is defined %}
+
+# Diseños (plantilla docs): aprobar un diseño o tocar una versión aprobada
+# necesita a quien aprueba diseños. Con la revisión de code owners obligatoria
+# en la rama principal (docs/06 › Diseño), nadie más puede aprobar.
+/contenido/disenos/ {{ aprobador_disenos }}
+{%- endif %}

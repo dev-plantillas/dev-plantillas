@@ -172,3 +172,15 @@ docs_repo:
     URL https del repo, sin barra final (ej. https://gitlab.com/mi-org/docs), o vacío.
     {% endif %}
 # <<< base común
+
+aprobador_disenos:
+  type: str
+  help: >-
+    Quién aprueba los diseños (CODEOWNERS de contenido/disenos/): @usuario o
+    @org/equipo. Con la revisión de code owners obligatoria, sólo esa persona o
+    equipo puede aprobar un diseño o cambiar una versión aprobada.
+  default: "{{ dueño }}"
+  validator: >-
+    {% if not (aprobador_disenos | regex_search('^@[A-Za-z0-9][A-Za-z0-9._-]*(/[A-Za-z0-9][A-Za-z0-9._-]*)*$')) %}
+    Formato @usuario o @org/equipo (ej. @mi-org/diseno).
+    {% endif %}

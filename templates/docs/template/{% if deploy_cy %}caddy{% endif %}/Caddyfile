@@ -15,6 +15,12 @@
 		-Server
 	}
 
+	# Prototipos de diseño (disenos/<slug>/vN/): su HTML y su JS corren en un
+	# origen opaco (CSP sandbox sin allow-same-origin). No pueden leer las
+	# páginas de la documentación ni sus cookies o localStorage.
+	@prototipos path_regexp ^/disenos/[^/]+/v[0-9]+/
+	header @prototipos Content-Security-Policy "sandbox allow-scripts allow-forms allow-popups allow-modals"
+
 	# Healthcheck (sin basic auth).
 	respond /salud 200
 
