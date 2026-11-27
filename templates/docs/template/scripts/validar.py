@@ -11,6 +11,8 @@ Comprueba:
     ficha en contenido/servicios/, y que los issues/ADRs referenciados existan;
   - que un issue `resuelto` tenga la sección «Verificación» completa;
   - que no haya enlaces simbólicos en contenido/ (MkDocs publicaría su destino);
+  - que no cambie nada de la versión aprobada de un diseño que ya estaba aprobado
+    en la rama base (DISENOS_BASE; si no está, origin/main local);
   - diseños: carpeta kebab con diseno.md, versiones v1, v2, ...; un diseño
     `aprobado` apunta a una versión que existe y tiene archivos; un issue que
     pasa a `en-curso` o `resuelto` sólo puede implementar diseños aprobados;
@@ -26,11 +28,13 @@ from __future__ import annotations
 import json
 import os
 import re
+import subprocess
 import sys
 from collections import defaultdict
 from pathlib import Path
 
 import jsonschema
+import yaml
 from jsonschema.exceptions import best_match
 
 import escenarios
@@ -50,6 +54,7 @@ from comun import (
     cargar_documentos,
     carpetas_diseno,
     configurar_salida,
+    separar_frontmatter,
     carpetas_issue,
     numero_carpeta,
     por_tipo,
@@ -235,6 +240,74 @@ def validar_enlaces_simbolicos(rep: Reporte) -> None:
                 )
 
 
+def _git(*args: str) -> str | None:
+    try:
+        r = subprocess.run(
+            ["git", "-c", "core.quotepath=off", "-C", str(RAIZ), *args],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=30,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    return r.stdout if r.returncode == 0 else None
+
+
+def _base_disenos(rep: Reporte) -> str | None:
+    """Commit contra el que se comparan las versiones aprobadas.
+
+    DISENOS_BASE (el CI la pone: rama destino del MR/PR, o el commit anterior en
+    un push a main) o, si no está, origin/HEAD u origin/main locales, sin fetch.
+    Se compara contra el merge-base, para no culpar a la rama de lo que cambió
+    en main después de abrirla."""
+    pedido = os.environ.get("DISENOS_BASE", "").strip()
+    if pedido and set(pedido) == {"0"}:
+        return None  # push que crea la rama: no hay commit anterior
+    if _git("rev-parse", "--is-inside-work-tree") is None:
+        return None
+    candidatos = [pedido] if pedido else ["origin/HEAD", "origin/main", "origin/master"]
+    for ref in candidatos:
+        sha = (_git("rev-parse", "--verify", "--quiet", f"{ref}^{{commit}}") or "").strip()
+        if sha:
+            return (_git("merge-base", sha, "HEAD") or sha).strip()
+    if pedido:
+        rep.error(
+            "DISENOS_BASE",
+            "base",
+            f'"{pedido}" no existe en este clon (¿falta fetch-depth: 0 / GIT_DEPTH: 0 o el fetch de la rama destino?)',
+        )
+    return None
+
+
+def validar_versiones_aprobadas(rep: Reporte) -> None:
+    """Una versión aprobada no se edita: si en la base el diseño estaba aprobado,
+    nada de su `version_aprobada` puede cambiar, borrarse ni agregarse."""
+    base = _base_disenos(rep)
+    if not base:
+        return
+    slugs = (_git("ls-tree", "-d", "--name-only", f"{base}:contenido/disenos") or "").split()
+    for slug in slugs:
+        crudo, _ = separar_frontmatter(_git("show", f"{base}:contenido/disenos/{slug}/diseno.md") or "")
+        try:
+            meta = yaml.safe_load(crudo or "") or {}
+        except yaml.YAMLError:
+            continue
+        version = meta.get("version_aprobada") if isinstance(meta, dict) else None
+        if meta.get("estado") != "aprobado" or not isinstance(version, str) or not RE_VERSION_DISENO.match(version):
+            continue
+        carpeta = f"contenido/disenos/{slug}/{version}/"
+        cambiados = set((_git("diff", "--name-only", base, "--", carpeta) or "").split("\n"))
+        cambiados |= set((_git("ls-files", "--others", "--exclude-standard", "--", carpeta) or "").split("\n"))
+        for archivo in sorted(c for c in cambiados if c):
+            rep.error(
+                archivo,
+                "version_aprobada",
+                f"{slug} {version} está aprobada en la rama base y no se edita: los cambios van en una "
+                f"versión nueva (v{int(version[1:]) + 1}/) y el diseño vuelve a en-revision",
+            )
+
+
 def validar_duplicados(docs: list[Documento], rep: Reporte) -> None:
     for tipo in ("issue", "adr"):
         vistos: dict[int, list[Documento]] = defaultdict(list)
@@ -391,6 +464,7 @@ def main() -> int:
     validar_esquemas(docs, rep)
     validar_nombres(docs, rep)
     validar_enlaces_simbolicos(rep)
+    validar_versiones_aprobadas(rep)
     validar_duplicados(docs, rep)
     validar_referencias(docs, rep)
     validar_verificacion(docs, rep)

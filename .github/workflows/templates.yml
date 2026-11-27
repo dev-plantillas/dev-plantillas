@@ -283,6 +283,11 @@ jobs:
           echo '<!doctype html><title>v1</title>' > contenido/disenos/detalle-de-pedido/v1/detalle.html
           make validar-frontmatter && make generar && grep -q 'detalle-de-pedido' contenido/_generado/disenos.md
           make construir && test -f site/disenos/detalle-de-pedido/v1/detalle.html
+          # Una versión aprobada no se edita: contra el commit que la aprobó, tocarla falla.
+          git add -A && git -c user.name=ci -c user.email=ci@example.com commit -qm "diseño aprobado"
+          echo '<!doctype html><title>editada</title>' > contenido/disenos/detalle-de-pedido/v1/detalle.html
+          if DISENOS_BASE=HEAD make validar-frontmatter; then echo "validar dejó editar una versión aprobada"; exit 1; fi
+          git checkout -- contenido/disenos
       - name: Imagen Docker (coolify)
         if: matrix.deploy == 'coolify'
         working-directory: ${{ runner.temp }}/docs

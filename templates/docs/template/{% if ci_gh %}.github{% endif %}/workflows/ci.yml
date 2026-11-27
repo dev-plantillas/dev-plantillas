@@ -23,8 +23,13 @@ jobs:
       # Vacío = sin página de escenarios ni regla de validar.
       REGISTRO_E2E: ${{ vars.REGISTRO_E2E }}
       REGISTRO_E2E_TOKEN: ${{ secrets.REGISTRO_E2E_TOKEN }}
+      # Versiones aprobadas de diseños: nada cambia respecto a la rama destino
+      # del PR, o al commit anterior en un push a main (scripts/validar.py).
+      DISENOS_BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.before }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # historia completa: validar compara contra DISENOS_BASE
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"

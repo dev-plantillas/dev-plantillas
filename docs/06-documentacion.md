@@ -143,6 +143,7 @@ varias variantes o exploraciones y programan cosas que nadie autorizó. Por eso:
 | El HTML de un prototipo corre JS con el origen del sitio y lee páginas internas | `disenos/<slug>/vN/**` se sirve con `Content-Security-Policy: sandbox allow-scripts allow-forms allow-popups allow-modals` (Caddy y Firebase Hosting): el prototipo corre en un origen opaco, sin acceso a las cookies, al localStorage ni a las demás páginas |
 | Un symlink en `contenido/` publica archivos de la máquina o del runner (MkDocs sigue los enlaces) | `make validar` lo rechaza y el hook de MkDocs corta cualquier build, también el del deploy |
 | HTML en el frontmatter (`titulo`, `aprobado_por`) inyectado en los índices | `generar.py` y el hook escapan el texto del frontmatter |
+| Alguien edita una versión ya aprobada (cambia lo que se programa sin aprobarlo) | `validar.py` compara contra la rama base (`DISENOS_BASE`: rama destino del MR/PR o commit anterior en un push a `main`; local, `origin/main`): si el diseño estaba aprobado, cualquier archivo agregado, cambiado o borrado en su `version_aprobada` falla. El CI hace checkout con la historia completa |
 | Datos reales en capturas y prototipos | Datos ficticios siempre: gitleaks no lee imágenes. Los prototipos son autocontenidos (sin scripts, fuentes ni analítica de terceros) |
 | Pantallas sin lanzar expuestas | El sitio de `docs` va detrás de autenticación si es interno (§7) |
 

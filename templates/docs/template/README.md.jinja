@@ -110,7 +110,7 @@ artefacto del último job `e2e`; GitHub: `gh run download` del artefacto
 
 | Paso | Falla si |
 |---|---|
-| `make validar` (frontmatter + markdownlint) | Falta un campo, valor fuera de la lista, id duplicado, repo sin ficha, issue `resuelto` sin Verificación, issue en curso con un diseño sin aprobar, estilo Markdown |
+| `make validar` (frontmatter + markdownlint) | Falta un campo, valor fuera de la lista, id duplicado, repo sin ficha, issue `resuelto` sin Verificación, issue en curso con un diseño sin aprobar, versión aprobada de un diseño editada (contra la rama destino), symlink en `contenido/`, estilo Markdown |
 | `make generar` + `git diff --exit-code` | `contenido/_generado/` desactualizado o editado a mano |
 | `make construir` | Enlace interno roto |
 | lychee (`lychee.toml`, sólo en la rama principal) | Enlace externo roto |

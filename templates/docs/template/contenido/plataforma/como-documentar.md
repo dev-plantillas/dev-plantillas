@@ -95,7 +95,9 @@ exploración que nadie autorizó.
   aprobado, o si la versión aprobada no existe o está vacía.
 - Una versión aprobada no se edita. Si hay cambios, se crea `v3/`, el diseño
   vuelve a `en-revision` (con `version_aprobada`, `aprobado_por` y `aprobado`
-  en `null`) y se aprueba otra vez.
+  en `null`) y se aprueba otra vez. `make validar` lo comprueba contra la rama
+  principal (en el CI, contra la rama destino del MR): tocar un archivo de la
+  versión aprobada falla.
 - Las exploraciones que no van se pasan a `descartado`; no se borran.
 - Quien aprueba cambia `estado`, `version_aprobada`, `aprobado_por` y
   `aprobado` en un MR propio (`docs(diseno): aprobar <slug> v2`), no dentro
@@ -125,7 +127,7 @@ archivo de estado compartido que actualizar.
 
 | Paso | Falla si |
 |---|---|
-| `make validar` | Falta un campo, valor fuera de la lista, id duplicado, repo sin ficha, `resuelto` sin Verificación, issue en curso con un diseño sin aprobar, estilo Markdown |
+| `make validar` | Falta un campo, valor fuera de la lista, id duplicado, repo sin ficha, `resuelto` sin Verificación, issue en curso con un diseño sin aprobar, versión aprobada editada, symlink, estilo Markdown |
 | `make generar` + `git diff --exit-code` | `_generado/` desactualizado o editado a mano |
 | `make construir` | Enlace interno roto |
 | lychee (sólo rama principal) | Enlace externo roto |
