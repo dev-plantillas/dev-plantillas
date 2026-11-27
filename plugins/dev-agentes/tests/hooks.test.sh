@@ -37,6 +37,8 @@ check "carpeta: archivo suelto"         2 "$(ev "$I" "$D/issues/042-descuentos.m
 check "carpeta: escapar con .."         2 "$(ev "$I" "$D/issues/042-descuentos/../043-otro/issue.md")"
 check "carpeta: _generado"              2 "$(ev "$I" "$D/_generado/issues-por-estado.md")"
 check "carpeta: adr"                    2 "$(ev "$I" "$D/adr/0001-registrar-decisiones.md")"
+check "carpeta: aprobar un diseño"      2 "$(ev "$I" "$D/disenos/detalle-de-pedido/diseno.md")"
+check "carpeta: versión de un diseño"   2 "$(ev "$I" "$D/disenos/detalle-de-pedido/v2/detalle.html")"
 check "carpeta: _plantillas"            2 "$(ev "$I" "$W/docs/_plantillas/issue.md")"
 I420=$W/worktrees/issue-420
 check "carpeta: issue-420 vs 042"       2 "$(ev "$I420" "$D/issues/042-descuentos/issue.md")"

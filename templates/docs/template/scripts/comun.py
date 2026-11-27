@@ -27,18 +27,20 @@ RE_CARPETA_ISSUE = re.compile(r"^(\d{3,})-([a-z0-9]+(?:-[a-z0-9]+)*)$")
 RE_ARCHIVO_ADR = re.compile(r"^(\d{4,})-([a-z0-9]+(?:-[a-z0-9]+)*)\.md$")
 RE_ARCHIVO_POSTMORTEM = re.compile(r"^(\d{4}-\d{2}-\d{2})-([a-z0-9]+(?:-[a-z0-9]+)*)\.md$")
 RE_ARCHIVO_RELEASE = re.compile(r"^v(\d+\.\d+\.\d+)\.md$")
+RE_VERSION_DISENO = re.compile(r"^v([1-9][0-9]*)$")
 
 # Orden de presentación (y de validación) de cada lista de valores.
 ESTADOS_ISSUE = ["abierto", "en-curso", "bloqueado", "resuelto", "descartado"]
 ESTADOS_ABIERTOS = ["abierto", "en-curso", "bloqueado"]
 PRIORIDADES = ["alta", "media", "baja"]
+ESTADOS_DISENO = ["borrador", "en-revision", "aprobado", "descartado"]
 
 
 @dataclass
 class Documento:
     """Un archivo Markdown de contenido/ con su frontmatter ya parseado."""
 
-    tipo: str  # issue | plan | adr | servicio | runbook | postmortem | release
+    tipo: str  # issue | plan | diseno | adr | servicio | runbook | postmortem | release
     ruta: Path  # absoluta
     meta: dict = field(default_factory=dict)
     cuerpo: str = ""
@@ -122,6 +124,29 @@ def carpetas_issue() -> list[Path]:
     return sorted((p for p in base.iterdir() if p.is_dir()), key=lambda p: p.name)
 
 
+def carpetas_diseno() -> list[Path]:
+    base = CONTENIDO / "disenos"
+    if not base.is_dir():
+        return []
+    return sorted((p for p in base.iterdir() if p.is_dir()), key=lambda p: p.name)
+
+
+def versiones_diseno(carpeta: Path) -> list[str]:
+    """Las carpetas v1, v2, ... de un diseño, en orden numérico."""
+    nombres = [p.name for p in carpeta.iterdir() if p.is_dir() and RE_VERSION_DISENO.match(p.name)]
+    return sorted(nombres, key=lambda n: int(n[1:]))
+
+
+def archivos_version(carpeta: Path) -> list[Path]:
+    """Archivos de una versión (sin ocultos como .gitkeep), en orden estable."""
+    if not carpeta.is_dir():
+        return []
+    return sorted(
+        (p for p in carpeta.rglob("*") if p.is_file() and not p.name.startswith(".")),
+        key=lambda p: p.relative_to(carpeta).as_posix(),
+    )
+
+
 def cargar_documentos() -> list[Documento]:
     """Todos los documentos con frontmatter de contenido/, en orden estable."""
     docs: list[Documento] = []
@@ -129,6 +154,9 @@ def cargar_documentos() -> list[Documento]:
         for nombre, tipo in (("issue.md", "issue"), ("plan.md", "plan")):
             if (carpeta / nombre).is_file():
                 docs.append(leer_documento(tipo, carpeta / nombre))
+    for carpeta in carpetas_diseno():
+        if (carpeta / "diseno.md").is_file():
+            docs.append(leer_documento("diseno", carpeta / "diseno.md"))
     for tipo, sub in (
         ("adr", "adr"),
         ("servicio", "servicios"),

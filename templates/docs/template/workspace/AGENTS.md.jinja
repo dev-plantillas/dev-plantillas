@@ -45,6 +45,12 @@ con `docs/workspace/bootstrap` (ver `docs/workspace/README.md`).
 5. **Cada sesión escribe únicamente la carpeta de su issue** en `docs`
    (`contenido/issues/<n>-*/`). Los índices de `contenido/_generado/` los
    regenera `make generar` (o el CI); nadie los edita a mano.
+6. **Si el diseño no está aprobado, no se programa.** Los diseños son archivos
+   locales en `docs/contenido/disenos/<slug>/` (`diseno.md` + `v1/`, `v2/`…).
+   Se implementa sólo la `version_aprobada` de un diseño `aprobado` que el
+   issue nombra en `disenos`; borradores, otras versiones y descartados no son
+   referencia. Sin diseño aprobado, la sesión se para y avisa. Aprobar es de una
+   persona, en un MR propio en `docs`; ningún agente aprueba diseños.
 
 ## Terminado significa
 

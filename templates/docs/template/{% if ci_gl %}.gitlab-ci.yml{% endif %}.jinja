@@ -67,10 +67,21 @@ sitio:
         - requirements.txt
     paths:
       - .cache/pip
+  variables:
+    GIT_DEPTH: 0 # historia completa: validar compara contra DISENOS_BASE
   before_script:
     - pip install -r requirements.txt
   script:
-    - make validar-frontmatter
+    # Versiones aprobadas de diseños: nada cambia respecto a la rama destino del
+    # MR, o al commit anterior en un push a main (scripts/validar.py).
+    - |
+      if [ -n "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" ]; then
+        git fetch --quiet origin "+refs/heads/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME:refs/remotes/origin/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
+        export DISENOS_BASE="origin/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
+      else
+        export DISENOS_BASE="$CI_COMMIT_BEFORE_SHA"
+      fi
+      make validar-frontmatter
     - make generar
     - |
       if ! git diff --exit-code -- contenido/_generado || [ -n "$(git status --porcelain --untracked-files=all -- contenido/_generado)" ]; then

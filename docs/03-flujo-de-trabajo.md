@@ -18,7 +18,9 @@ issue  →  worktrees  →  sesión  →  verificar  →  MR  →  cerrar
 1. **Issue** en `docs/contenido/issues/<n>-<slug>/` (`issue.md` y, si cruza
    repos, `plan.md`): qué, por qué, criterios de aceptación, repos afectados.
    Con tracker, el issue también existe ahí y se liga con `tracker: <KEY>-<n>`
-   en el frontmatter (`docs/06` §4).
+   en el frontmatter (`docs/06` §4). Si toca pantallas, nombra en `disenos`
+   los diseños que implementa: **si un diseño no está aprobado, no se
+   programa** (`docs/06` › Diseño).
 2. **Worktrees**, uno por repo que toca, todos bajo `worktrees/issue-<n>/`.
    Desde la raíz del workspace (`docs/01`):
    ```bash
@@ -250,7 +252,7 @@ mensajes entre sesiones (`/coordinar`).
   diff del MR. Nunca edita.
 - **Coordinador**: la sesión `coord`; planifica, coordina y limpia. No
   implementa features.
-- **Humano**: aprueba el plan, responde los `esperando-ok`, aprueba el MR, aplica
+- **Humano**: aprueba los diseños, aprueba el plan, responde los `esperando-ok`, aprueba el MR, aplica
   migraciones a prod y taggea `prod-v*`.
 
 ## 11. Crear un servicio o app nuevos

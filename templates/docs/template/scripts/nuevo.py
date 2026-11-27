@@ -3,6 +3,7 @@
 
     python scripts/nuevo.py issue --titulo "Descuento por pedido con tope" [--repos protos,orders-service] [--prioridad alta] [--clase bug]
     python scripts/nuevo.py plan --issue 42
+    python scripts/nuevo.py diseno --titulo "Detalle de pedido" [--repos admin-web]
     python scripts/nuevo.py adr --titulo "Rate limit en Redis"
     python scripts/nuevo.py runbook --titulo "Rollback de un servicio" --repos orders-service
     python scripts/nuevo.py postmortem --titulo "Caída del gateway" --repos api-gateway [--fecha 2026-10-09]
@@ -37,7 +38,7 @@ from comun import (
     leer_documento,
 )
 
-TIPOS = ("issue", "plan", "adr", "runbook", "postmortem", "release", "servicio")
+TIPOS = ("issue", "plan", "diseno", "adr", "runbook", "postmortem", "release", "servicio")
 CLASES = ("feature", "bug", "deuda", "investigacion")
 LARGO_SLUG = 60  # rutas cortas: Windows corta en 260 caracteres
 
@@ -231,6 +232,14 @@ def crear(args) -> Path:
             ),
         )
         enlazar_plan(carpeta / "issue.md")
+        return ruta
+
+    if args.tipo == "diseno":
+        requerir(titulo, 'falta TITULO="..."')
+        carpeta = CONTENIDO / "disenos" / slug_de(titulo)
+        ruta = escribir(carpeta / "diseno.md", rellenar("diseno.md", base | {"REPOS": yaml_lista(lista_repos(args.repos))}))
+        # git no versiona carpetas vacías: .gitkeep hasta que lleguen los archivos de la v1.
+        escribir(carpeta / "v1" / ".gitkeep", "")
         return ruta
 
     if args.tipo == "adr":

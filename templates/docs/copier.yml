@@ -180,3 +180,15 @@ tracker_mcp:
     de TRACKER_MCP_URL y TRACKER_TOKEN en el entorno de cada persona
   default: false
 # <<< base común
+
+aprobador_disenos:
+  type: str
+  help: >-
+    Quién aprueba los diseños (CODEOWNERS de contenido/disenos/): @usuario o
+    @org/equipo. Con la revisión de code owners obligatoria, sólo esa persona o
+    equipo puede aprobar un diseño o cambiar una versión aprobada.
+  default: "{{ dueño }}"
+  validator: >-
+    {% if not (aprobador_disenos | regex_search('^@[A-Za-z0-9][A-Za-z0-9._-]*(/[A-Za-z0-9][A-Za-z0-9._-]*)*$')) %}
+    Formato @usuario o @org/equipo (ej. @mi-org/diseno).
+    {% endif %}

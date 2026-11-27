@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "diseno.schema.json",
+  "title": "diseno",
+  "description": "Frontmatter de contenido/disenos/<slug>/diseno.md",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "titulo",
+    "estado",
+    "repos",
+    "version_aprobada",
+    "aprobado_por",
+    "aprobado",
+    "creado"
+  ],
+  "properties": {
+    "titulo": {
+      "type": "string",
+      "minLength": 3
+    },
+    "estado": {
+      "enum": [
+        "borrador",
+        "en-revision",
+        "aprobado",
+        "descartado"
+      ],
+      "description": "Sólo un diseño aprobado se programa, y sólo su version_aprobada"
+    },
+    "repos": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+      },
+      "uniqueItems": true,
+      "description": "Repos de front que lo implementan (cada uno con ficha en servicios/)"
+    },
+    "version_aprobada": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^v[1-9][0-9]*$"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Carpeta de la versión que se programa (v1, v2, ...); null si no está aprobado"
+    },
+    "aprobado_por": {
+      "oneOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "aprobado": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+          "description": "Fecha absoluta AAAA-MM-DD"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "creado": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+      "description": "Fecha absoluta AAAA-MM-DD"
+    }
+  },
+  "if": {
+    "properties": {
+      "estado": {
+        "const": "aprobado"
+      }
+    },
+    "required": [
+      "estado"
+    ]
+  },
+  "then": {
+    "properties": {
+      "version_aprobada": {
+        "type": "string",
+        "pattern": "^v[1-9][0-9]*$"
+      },
+      "aprobado_por": {
+        "type": "string",
+        "minLength": 1
+      },
+      "aprobado": {
+        "type": "string",
+        "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+        "description": "Fecha absoluta AAAA-MM-DD"
+      }
+    }
+  },
+  "else": {
+    "properties": {
+      "version_aprobada": {
+        "type": "null"
+      },
+      "aprobado_por": {
+        "type": "null"
+      },
+      "aprobado": {
+        "type": "null"
+      }
+    }
+  }
+}

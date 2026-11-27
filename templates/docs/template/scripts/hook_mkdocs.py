@@ -3,9 +3,13 @@
 - Issues (`issues/<n>-<slug>/issue.md`): bloque con estado, prioridad, tipo,
   área, repos (enlazados a su ficha) y fechas, debajo del título.
 - ADRs (`adr/NNNN-*.md`): estado y fecha (y quién lo reemplaza).
+- Diseños (`disenos/<slug>/diseno.md`): estado, repos, versión aprobada con
+  enlaces a sus archivos y, si no está aprobado, el aviso de que no se programa.
 - Índices de sección (`runbooks/`, `postmortems/`, `releases/`, `servicios/`,
   `casos-de-uso/`): agrega al final la lista de documentos de la carpeta, así
   ningún documento queda huérfano sin que nadie edite un índice compartido.
+- Corta el build si hay enlaces simbólicos en el contenido (MkDocs publicaría su
+  destino).
 - Casos de uso: si existe `_generado/escenarios.md` (registro e2e configurado,
   ver scripts/escenarios.py), un enlace a la página de estado por escenario.
 """
@@ -13,17 +17,22 @@
 from __future__ import annotations
 
 import html
+import os
 import posixpath
 import re
 import sys
 from pathlib import Path
+from urllib.parse import quote
+
+from mkdocs.exceptions import PluginError
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from comun import titulo_markdown, version_tupla  # noqa: E402
+from comun import CONTENIDO, archivos_version, titulo_markdown, version_tupla  # noqa: E402
 
 RE_ISSUE = re.compile(r"^issues/(\d+)-[^/]+/issue\.md$")
 RE_ADR = re.compile(r"^adr/\d{4,}-[^/]+\.md$")
+RE_DISENO = re.compile(r"^disenos/([^/]+)/diseno\.md$")
 SECCIONES = ("runbooks", "postmortems", "releases", "servicios", "casos-de-uso")
 
 
@@ -90,6 +99,36 @@ def _adr(markdown: str, meta: dict) -> str:
     return _insertar_bajo_h1(markdown, _bloque(partes))
 
 
+def _diseno(markdown: str, meta: dict, slug: str, src: str, files) -> str:
+    estado = meta.get("estado", "?")
+    repos = meta.get("repos") or []
+    version = meta.get("version_aprobada")
+    partes = [
+        _chip(f"estado-{estado}", estado),
+        "**Repos:** " + (", ".join(_repo(r, src, files) for r in repos) if repos else "sin definir"),
+        f"**Creado:** {meta.get('creado')}" if meta.get("creado") else "",
+    ]
+    if estado == "aprobado" and version:
+        archivos = archivos_version(CONTENIDO / "disenos" / slug / str(version))
+        enlaces = ", ".join(
+            f"[{html.escape(a.relative_to(CONTENIDO / 'disenos' / slug).as_posix())}]"
+            f"({quote(a.relative_to(CONTENIDO / 'disenos' / slug).as_posix())})"
+            for a in archivos
+        )
+        partes += [
+            f"**Se programa:** {html.escape(str(version))}" + (f" ({enlaces})" if enlaces else ""),
+            f"**Aprobado:** {meta.get('aprobado')} por {html.escape(str(meta.get('aprobado_por')))}",
+        ]
+    bloque = _bloque(partes)
+    if estado != "aprobado":
+        bloque += (
+            '\n!!! warning "No se programa"\n'
+            f"    Este diseño está **{html.escape(str(estado))}**. Sólo se implementa la versión "
+            "aprobada de un diseño aprobado.\n"
+        )
+    return _insertar_bajo_h1(markdown, bloque)
+
+
 def _indice(markdown: str, seccion: str, page, files) -> str:
     docs = [
         f for f in files.documentation_pages()
@@ -104,11 +143,22 @@ def _indice(markdown: str, seccion: str, page, files) -> str:
     else:
         docs.sort(key=lambda f: f.src_uri)
     lineas = [
-        f"- [{titulo_markdown(Path(f.abs_src_path)).replace('[', '(').replace(']', ')')}]"
+        f"- [{html.escape(titulo_markdown(Path(f.abs_src_path)), quote=False).replace('[', '(').replace(']', ')')}]"
         f"({posixpath.basename(f.src_uri)})"
         for f in docs
     ]
     return markdown.rstrip("\n") + "\n\n## Documentos\n\n" + "\n".join(lineas) + "\n"
+
+
+def on_pre_build(config):
+    """MkDocs sigue los symlinks de docs_dir y publica su destino: uno que apunte
+    fuera del repo sacaría archivos de la máquina o del runner al sitio. Se corta
+    el build (también el del deploy, que no corre `make validar`)."""
+    for raiz, carpetas, archivos in os.walk(config["docs_dir"]):
+        for nombre in carpetas + archivos:
+            ruta = Path(raiz) / nombre
+            if ruta.is_symlink():
+                raise PluginError(f"enlace simbólico en el contenido, no se publica: {ruta}")
 
 
 def on_page_markdown(markdown, page, config, files):
@@ -118,6 +168,8 @@ def on_page_markdown(markdown, page, config, files):
         return _issue(markdown, meta, src, files)
     if RE_ADR.match(src):
         return _adr(markdown, meta)
+    if m := RE_DISENO.match(src):
+        return _diseno(markdown, meta, m.group(1), src, files)
     seccion = posixpath.dirname(src)
     if posixpath.basename(src) == "index.md" and seccion in SECCIONES:
         markdown = _indice(markdown, seccion, page, files)

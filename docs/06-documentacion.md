@@ -49,6 +49,9 @@ docs/
 │   ├── issues/<n>-<slug>/
 │   │   ├── issue.md              ← qué, por qué, criterios, repos, evidencia
 │   │   └── plan.md               ← (opcional) plan o prompt para el agente
+│   ├── disenos/<slug>/
+│   │   ├── diseno.md             ← estado, repos, versión aprobada, qué resuelve
+│   │   └── v1/  v2/ …            ← archivos locales de cada versión (HTML, PNG, SVG)
 │   ├── adr/NNNN-<titulo>.md      ← decisiones de arquitectura
 │   ├── runbooks/                 ← deploy, rollback, migraciones, incidentes
 │   ├── postmortems/AAAA-MM-DD-<slug>.md
@@ -81,6 +84,7 @@ creado: 2026-10-09
 resuelto: null
 relacionados: [37]
 tracker: RND-42           # opcional: clave del issue en el tracker (docs/03 §6)
+disenos: [detalle-de-pedido]   # opcional: diseños que implementa; aprobados para pasar a en-curso
 ---
 ```
 
@@ -91,6 +95,58 @@ con fecha, comandos y commits).
 
 `plan.md` es opcional: el plan detallado o el prompt para el agente. Si existe,
 `issue.md` lo enlaza. Reemplaza a los `Prompt-*.md` sueltos.
+
+### Diseño (`disenos/<slug>/diseno.md`)
+
+Las pantallas se diseñan con **archivos locales** versionados en este repo, no
+con enlaces a herramientas externas: lo que se programa tiene que estar en git,
+con historia y revisión. Un diseño por pantalla o flujo (un mismo diseño puede
+servir a varios issues); cada versión es una carpeta `v1/`, `v2/`…
+
+```yaml
+---
+titulo: Detalle de pedido
+estado: aprobado           # borrador | en-revision | aprobado | descartado
+repos: [admin-web]         # fronts que lo implementan (con ficha)
+version_aprobada: v2       # la única que se programa; null si no está aprobado
+aprobado_por: victor       # null si no está aprobado
+aprobado: 2026-11-26       # null si no está aprobado
+creado: 2026-11-20
+---
+```
+
+Cuerpo: **Qué resuelve** · **Versiones** (qué cambia cada una y por qué) ·
+**Notas para implementar** (estados vacíos, errores, permisos, responsive).
+
+**Si no está aprobado, no se programa.** Los agentes se confunden cuando ven
+varias variantes o exploraciones y programan cosas que nadie autorizó. Por eso:
+
+- Se implementa **sólo** la `version_aprobada` de un diseño `aprobado`, la que
+  nombra el issue en `disenos`. Borradores, diseños en revisión, descartados y
+  las demás versiones son historia, no referencia.
+- `validar.py` falla si un issue `en-curso` o `resuelto` apunta a un diseño que
+  no está aprobado, si la versión aprobada no existe o está vacía, o si una
+  carpeta de versión no se llama `vN`.
+- Una versión aprobada no se edita: los cambios van en la versión siguiente y
+  el diseño vuelve a `en-revision` hasta aprobarse otra vez.
+- Aprobar es de una persona, en un MR propio en `docs`
+  (`docs(diseno): aprobar <slug> v2`); ningún agente aprueba. La sesión de un
+  issue tampoco puede tocar `disenos/` (`guard-worktree` sólo le deja la
+  carpeta de su issue).
+- El sitio marca cada diseño no aprobado con un aviso «No se programa», y en
+  uno aprobado enlaza los archivos de la versión que se programa.
+
+**Seguridad de los diseños:**
+
+| Riesgo | Control |
+|---|---|
+| Alguien sin autoridad marca un diseño como `aprobado` | `CODEOWNERS`: `/contenido/disenos/` es de `aprobador_disenos` (pregunta de la plantilla, por defecto el `dueño`). Hay que activar en la rama principal la **revisión obligatoria de code owners** (GitHub: ruleset › *Require review from Code Owners*; GitLab Premium: *Code owner approval*). Sin eso, CODEOWNERS sólo sugiere revisores |
+| El HTML de un prototipo corre JS con el origen del sitio y lee páginas internas | `disenos/<slug>/vN/**` se sirve con `Content-Security-Policy: sandbox allow-scripts allow-forms allow-popups allow-modals` (Caddy y Firebase Hosting): el prototipo corre en un origen opaco, sin acceso a las cookies, al localStorage ni a las demás páginas |
+| Un symlink en `contenido/` publica archivos de la máquina o del runner (MkDocs sigue los enlaces) | `make validar` lo rechaza y el hook de MkDocs corta cualquier build, también el del deploy |
+| HTML en el frontmatter (`titulo`, `aprobado_por`) inyectado en los índices | `generar.py` y el hook escapan el texto del frontmatter |
+| Alguien edita una versión ya aprobada (cambia lo que se programa sin aprobarlo) | `validar.py` compara contra la rama base (`DISENOS_BASE`: rama destino del MR/PR o commit anterior en un push a `main`; local, `origin/main`): si el diseño estaba aprobado, cualquier archivo agregado, cambiado o borrado en su `version_aprobada` falla. El CI hace checkout con la historia completa |
+| Datos reales en capturas y prototipos | Datos ficticios siempre: gitleaks no lee imágenes. Los prototipos son autocontenidos (sin scripts, fuentes ni analítica de terceros) |
+| Pantallas sin lanzar expuestas | El sitio de `docs` va detrás de autenticación si es interno (§7) |
 
 ### ADR (`adr/NNNN-<titulo>.md`)
 
@@ -147,6 +203,7 @@ cada release es un archivo propio y el tablero de rollout se **genera**.
 |---|---|
 | `issues-por-estado.md` | Tablas de issues abiertos, en curso, bloqueados y resueltos recientes |
 | `issues-por-repo.md` | Para cada repo, sus issues abiertos (sirve para planificar) |
+| `disenos.md` | Diseños por estado: los aprobados con la versión que se programa, sus repos e issues |
 | `adr.md` | Índice de decisiones con su estado |
 | `servicios.md` | Mapa de servicios + diagrama Mermaid de dependencias (desde `depende_de`) |
 | `rollout.md` | Qué versión de cada servicio está en QA y en prod, según las releases |
@@ -198,6 +255,8 @@ make construir      # mkdocs build --strict
   issues ni `_generado/`.
 - Fechas absolutas (`2026-10-09`), nunca «ayer».
 - Un issue pasa a `resuelto` sólo con la sección **Verificación** completa.
+- Si el diseño no está aprobado, no se programa: sólo la `version_aprobada` de
+  un diseño `aprobado` que el issue nombra en `disenos`. Ningún agente aprueba.
 - Para crear documentos se usa `make nuevo`, no se copian archivos a mano.
 
 Integración con el plugin `dev-agentes`:
@@ -233,6 +292,7 @@ repos_iniciales: [protos, api-gateway]     # crea una ficha por repo
 obsidian:        true | false
 deploy_target:   firebase-hosting | coolify | ninguno
 ci_provider:     gitlab | github
+aprobador_disenos: @mi-org/diseno        # CODEOWNERS de contenido/disenos/ (por defecto, el dueño)
 ```
 
 Contenido inicial generado: `index.md`, `plataforma/` con un mapa de servicios
@@ -259,6 +319,12 @@ las plantillas.
       → `make validar` falla con un mensaje que dice archivo y campo.
 - [ ] Editar a mano `_generado/` → el CI falla.
 - [ ] Un enlace roto → `mkdocs build --strict` falla.
+- [ ] Un symlink en `contenido/` → `make validar` y `mkdocs build` fallan; los
+      archivos de `disenos/<slug>/vN/` se sirven con `CSP: sandbox` y
+      `CODEOWNERS` asigna `contenido/disenos/` a `aprobador_disenos`.
+- [ ] `make nuevo TIPO=diseno` crea `disenos/<slug>/diseno.md` en `borrador`
+      con `v1/`; un issue `en-curso` con ese diseño en `disenos` → `make validar`
+      falla hasta que se aprueba con una versión que tiene archivos.
 - [ ] El sitio muestra estado/prioridad/repos al principio de cada issue y el
       diagrama de servicios se renderiza.
 - [ ] Imagen de Coolify y deploy de Firebase Hosting como en `angular-app`.

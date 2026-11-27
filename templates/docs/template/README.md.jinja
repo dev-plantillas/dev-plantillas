@@ -23,6 +23,7 @@ agentes: [AGENTS.md](AGENTS.md). Reglas para personas:
 | `make instalar` | `python -m venv .venv` y `.venv/Scripts/pip install -r requirements.txt` (Linux/macOS: `.venv/bin/pip`) | Dependencias |
 | `make nuevo TIPO=issue TITULO="..." REPOS=a,b` | `python scripts/nuevo.py issue --titulo "..." --repos a,b` | Issue nuevo con el número siguiente |
 | `make nuevo TIPO=plan ISSUE=42` | `python scripts/nuevo.py plan --issue 42` | `plan.md` en la carpeta del issue |
+| `make nuevo TIPO=diseno TITULO="..." REPOS=front` | `python scripts/nuevo.py diseno --titulo "..." --repos front` | Diseño nuevo (`diseno.md` + `v1/`), en `borrador` |
 | `make nuevo TIPO=adr TITULO="..."` | `python scripts/nuevo.py adr --titulo "..."` | ADR nuevo |
 | `make nuevo TIPO=runbook TITULO="..." REPOS=a` | `python scripts/nuevo.py runbook --titulo "..." --repos a` | Runbook |
 | `make nuevo TIPO=postmortem TITULO="..." REPOS=a` | `python scripts/nuevo.py postmortem --titulo "..." --repos a` | Postmortem con la fecha de hoy |
@@ -50,6 +51,7 @@ contenido/                 ← lo que publica MkDocs (docs_dir) y el vault de Ob
 ├── plataforma/            ← arquitectura, ambientes, glosario, cómo documentar
 ├── servicios/<repo>.md    ← una ficha por repo (nombre exacto del repo)
 ├── issues/<nnn>-<slug>/   ← issue.md (+ plan.md)
+├── disenos/<slug>/        ← diseno.md + v1/, v2/… (archivos locales); sólo se programa la versión aprobada
 ├── adr/NNNN-<slug>.md
 ├── runbooks/  postmortems/  casos-de-uso/  releases/
 └── _generado/             ← índices: los escribe `make generar`, nadie los edita
@@ -62,7 +64,7 @@ scripts/                   ← nuevo.py, validar.py, generar.py, hook_mkdocs.py
 
 MkDocs Material con búsqueda, modo oscuro y diagramas Mermaid
 (` ```mermaid `). El hook `scripts/hook_mkdocs.py` muestra estado, prioridad y
-repos al principio de cada issue (y estado/fecha en cada ADR), y lista los
+repos al principio de cada issue (estado/fecha en cada ADR; estado y versión aprobada en cada diseño), y lista los
 documentos de cada sección en su índice. `strict: true`: un enlace interno roto
 rompe el build.
 {%- if obsidian %}
@@ -108,7 +110,7 @@ artefacto del último job `e2e`; GitHub: `gh run download` del artefacto
 
 | Paso | Falla si |
 |---|---|
-| `make validar` (frontmatter + markdownlint) | Falta un campo, valor fuera de la lista, id duplicado, repo sin ficha, issue `resuelto` sin Verificación, estilo Markdown |
+| `make validar` (frontmatter + markdownlint) | Falta un campo, valor fuera de la lista, id duplicado, repo sin ficha, issue `resuelto` sin Verificación, issue en curso con un diseño sin aprobar, versión aprobada de un diseño editada (contra la rama destino), symlink en `contenido/`, estilo Markdown |
 | `make generar` + `git diff --exit-code` | `contenido/_generado/` desactualizado o editado a mano |
 | `make construir` | Enlace interno roto |
 | lychee (`lychee.toml`, sólo en la rama principal) | Enlace externo roto |

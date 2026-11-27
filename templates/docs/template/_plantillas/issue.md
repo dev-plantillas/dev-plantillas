@@ -9,6 +9,7 @@ repos: __REPOS__
 creado: __FECHA__
 resuelto: null
 relacionados: []
+disenos: []            # diseños de contenido/disenos/ que implementa: tienen que estar aprobados
 ---
 
 # __TITULO_TEXTO__

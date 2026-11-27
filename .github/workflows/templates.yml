@@ -278,6 +278,26 @@ jobs:
           make validar-frontmatter
           sed -i 's/^estado: abierto/estado: cerrado/' contenido/issues/002-primer-issue/issue.md
           if make validar-frontmatter; then echo "validar no detectó estado: cerrado"; exit 1; fi
+          sed -i 's/^estado: cerrado/estado: abierto/' contenido/issues/002-primer-issue/issue.md
+      - name: diseños sin aprobar no se programan
+        working-directory: ${{ runner.temp }}/docs
+        run: |
+          make nuevo TIPO=servicio TITULO=admin-web
+          make nuevo TIPO=diseno TITULO="Detalle de pedido" REPOS=admin-web
+          D=contenido/disenos/detalle-de-pedido/diseno.md I=contenido/issues/003-segundo-issue/issue.md
+          test -f "$D" && test -d contenido/disenos/detalle-de-pedido/v1
+          sed -i 's/^disenos: \[\]/disenos: [detalle-de-pedido]/; s/^estado: abierto/estado: en-curso/; s/^area: null/area: admin-web/; s/^repos: \[\]/repos: [admin-web]/' "$I"
+          if make validar-frontmatter; then echo "validar dejó un issue en-curso con un diseño en borrador"; exit 1; fi
+          sed -i 's/^estado: borrador/estado: aprobado/; s/^version_aprobada: null/version_aprobada: v1/; s/^aprobado_por: null/aprobado_por: ci/; s/^aprobado: null/aprobado: 2026-11-26/' "$D"
+          if make validar-frontmatter; then echo "validar aprobó una v1 vacía"; exit 1; fi
+          echo '<!doctype html><title>v1</title>' > contenido/disenos/detalle-de-pedido/v1/detalle.html
+          make validar-frontmatter && make generar && grep -q 'detalle-de-pedido' contenido/_generado/disenos.md
+          make construir && test -f site/disenos/detalle-de-pedido/v1/detalle.html
+          # Una versión aprobada no se edita: contra el commit que la aprobó, tocarla falla.
+          git add -A && git -c user.name=ci -c user.email=ci@example.com commit -qm "diseño aprobado"
+          echo '<!doctype html><title>editada</title>' > contenido/disenos/detalle-de-pedido/v1/detalle.html
+          if DISENOS_BASE=HEAD make validar-frontmatter; then echo "validar dejó editar una versión aprobada"; exit 1; fi
+          git checkout -- contenido/disenos
       - name: Imagen Docker (coolify)
         if: matrix.deploy == 'coolify'
         working-directory: ${{ runner.temp }}/docs
@@ -288,6 +308,9 @@ jobs:
           curl -fsS http://localhost:8080/ | grep -q 'Documentación de demo'
           curl -fsS http://localhost:8080/issues/001-issue-de-ejemplo/issue/ | grep -q 'class="metadatos"'
           curl -fsS http://localhost:8080/_generado/servicios/ | grep -q 'class="mermaid"'
+          # Prototipos de diseño (los crea el paso «diseños sin aprobar»): origen opaco, la página del diseño no.
+          curl -fsSI http://localhost:8080/disenos/detalle-de-pedido/v1/detalle.html | grep -qi '^content-security-policy: sandbox'
+          if curl -fsSI http://localhost:8080/disenos/detalle-de-pedido/diseno/ | grep -qi '^content-security-policy'; then echo "la página del diseño no debe ir en sandbox"; exit 1; fi
 
   # e2e-tests: genera variantes (auth × CI × web), typecheck, `playwright test
   # --list`, YAML/actionlint, y corre la suite api contra un servidor mínimo que
