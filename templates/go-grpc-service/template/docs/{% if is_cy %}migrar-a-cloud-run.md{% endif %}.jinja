@@ -50,7 +50,7 @@ Qué cambia (resultado de un proyecto sin modificaciones locales):
 |---|---|
 | Aparecen | `cloudbuild.yaml`, `cloudrun.qa.yaml`, `cloudrun.prod.yaml`, `.gcloudignore`, `scripts/rollback.sh`, `scripts/setup_cloud_run_secrets.sh`, `docs/ci-cd-setup.md` |
 | Desaparecen | `docker-compose.coolify.yml`, `docs/deploy.md`, `docs/migrar-a-cloud-run.md` |
-| Cambian | {% if ci_gl %}`.gitlab-ci.yml`{% else %}`.github/workflows/ci.yml`, `.github/workflows/deploy.yml`{% endif %} (release a Cloud Build + Cloud Run con WIF), `CLAUDE.md`, `.env.example`, `docker-compose.yml` (solo comentarios), `.copier-answers.yml` |
+| Cambian | {% if ci_gl %}`.gitlab-ci.yml`{% else %}`.github/workflows/ci.yml`, `.github/workflows/deploy.yml`{% endif %} (release a Cloud Build + Cloud Run con WIF), `AGENTS.md`, `.env.example`, `docker-compose.yml` (solo comentarios), `.copier-answers.yml` |
 | No cambian | código Go, `Dockerfile`, `migrations/`, `scripts/apply_migration.sh`, `scripts/migrate_db.sh` |
 
 Revisión:
@@ -63,8 +63,8 @@ go build ./... && go vet ./... && go test ./...
 git add -A && git commit -m "Migrar deploy de Coolify a Cloud Run"
 ```
 
-Si habías modificado la CI o `CLAUDE.md`, el update intenta un merge de 3 vías:
-cambios en zonas distintas se conservan (p. ej. la descripción de `CLAUDE.md`);
+Si habías modificado la CI o `AGENTS.md`, el update intenta un merge de 3 vías:
+cambios en zonas distintas se conservan (p. ej. la descripción de `AGENTS.md`);
 si se pisan, quedan marcadores (`<<<<<<<`) o `.rej` para resolver a mano.
 
 **Ojo:** los archivos que desaparecen (`docker-compose.coolify.yml`,

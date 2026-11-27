@@ -1,6 +1,3 @@
-# Workspace local de cada dev (lista real de repos de su org)
-workspace/repos.txt
-
 # Artefactos de pruebas de plantillas
 .tmp/
 node_modules/

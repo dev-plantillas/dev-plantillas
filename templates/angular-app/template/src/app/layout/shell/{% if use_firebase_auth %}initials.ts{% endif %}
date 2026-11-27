@@ -1,0 +1,19 @@
+/** Iniciales para el avatar: dos palabras del nombre, o el inicio del correo. */
+export function initialsOf(
+  user: { displayName?: string | null; email?: string | null } | null,
+): string {
+  const source = user?.displayName?.trim() || user?.email?.split('@')[0] || '';
+  const words = source.split(/[\s._-]+/).filter(Boolean);
+  const letters =
+    words.length > 1
+      ? firstChar(words[0]!) + firstChar(words[1]!)
+      : Array.from(words[0] ?? '')
+          .slice(0, 2)
+          .join('');
+  return letters.toUpperCase();
+}
+
+/** Primer carácter completo (no parte un emoji ni otro par sustituto). */
+function firstChar(word: string): string {
+  return Array.from(word)[0] ?? '';
+}

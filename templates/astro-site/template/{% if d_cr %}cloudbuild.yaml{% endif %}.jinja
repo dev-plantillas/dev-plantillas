@@ -1,0 +1,42 @@
+# Cloud Build para {{ repo_name }}: build de la imagen (Dockerfile) y push a
+# Artifact Registry. _IMAGE y _ENTORNO los inyecta el CI con --substitutions.
+# logging: CLOUD_LOGGING_ONLY evita depender de un bucket de logs cuando el
+# build corre bajo un service account impersonado (WIF).
+
+steps:
+  # El design system (@vrojas1015/vrb) viene de GitHub Packages: el token sale de
+  # Secret Manager (secreto `npm-token`, ver docs/deploy.md) y entra al build como
+  # secret de BuildKit, sin quedar en la imagen ni en el log.
+  - name: gcr.io/cloud-builders/docker
+    entrypoint: bash
+    env:
+      - DOCKER_BUILDKIT=1
+    secretEnv: ['NPM_TOKEN']
+    args:
+      - -c
+      - >-
+        docker build --secret id=npm_token,env=NPM_TOKEN
+        --build-arg PUBLIC_ENTORNO=${_ENTORNO}
+{%- if ga4 %}
+        --build-arg PUBLIC_GA4_ID=${_GA4_ID}
+{%- endif %}
+        -t ${_IMAGE} .
+
+availableSecrets:
+  secretManager:
+    - versionName: projects/$PROJECT_ID/secrets/npm-token/versions/latest
+      env: NPM_TOKEN
+
+images:
+  - ${_IMAGE}
+
+substitutions:
+  _ENTORNO: prod
+{%- if ga4 %}
+  _GA4_ID: ''
+{%- endif %}
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+timeout: 1200s

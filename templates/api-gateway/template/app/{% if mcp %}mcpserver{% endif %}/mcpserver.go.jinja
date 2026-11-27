@@ -1,0 +1,297 @@
+// Package mcpserver sirve /mcp: los métodos de routes.yaml con `mcp:` como
+// herramientas MCP (SDK oficial, transporte HTTP streamable sin sesión).
+// docs/15-mcp.md §6-8 de dev-plantillas.
+//
+// Cada llamada a una herramienta se traduce al request REST equivalente y
+// pasa por el mismo mux del gateway: ruta declarada, auth, roles, rate limit,
+// límite de body, deadline y formato de error son los de la API. No hay un
+// segundo camino hacia los servicios.
+package mcpserver
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"log/slog"
+	"net/http"
+	"strings"
+	"time"
+
+	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/reflect/protoregistry"
+
+	"{{ module_path }}/app/apierror"
+	"{{ module_path }}/app/auth"
+	"{{ module_path }}/app/reqctx"
+	"{{ module_path }}/app/routes"
+)
+
+// Path es el endpoint MCP del gateway.
+const Path = "/mcp"
+
+const (
+	maxRequestBytes = 1 << 20   // un mensaje JSON-RPC
+	maxResultBytes  = 256 << 10 // lo que llega al contexto del agente: paginar
+)
+
+// Options configura New.
+type Options struct {
+	Logger    *slog.Logger
+	Routes    *routes.Table
+	Bindings  []routes.Binding // rutas HTTP de los servicios registrados
+	Auth      auth.Authenticator
+	Challenge string // WWW-Authenticate de los 401
+	Name      string // nombre del servidor que ve el cliente
+	Version   string
+	// Dispatch es el mux REST del gateway (con la política de rutas): cada
+	// llamada a una herramienta entra ahí como un request interno.
+	Dispatch http.Handler
+}
+
+type tool struct {
+	policy  *routes.Policy
+	binding routes.Binding
+	fields  map[string]bool // campos del mensaje de request (nivel superior)
+}
+
+// New arma el handler de /mcp. Falla si una herramienta no se puede servir
+// (método sin google.api.http, streaming o template no soportado): igual que
+// routes.yaml, un error de configuración no deja arrancar.
+func New(o Options) (http.Handler, error) {
+	if _, none := o.Auth.(auth.None); none {
+		return nil, errors.New("mcp: hace falta auth; toda llamada tiene un actor (docs/15 §8)")
+	}
+	srv := mcp.NewServer(&mcp.Implementation{Name: o.Name, Version: o.Version}, nil)
+	var errs []error
+	for _, p := range o.Routes.Tools() {
+		t, err := newTool(p, o.Bindings)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("routes.yaml: %s (mcp.tool %s): %w", p.Method, p.MCP.Name, err))
+			continue
+		}
+		md, _ := inputOf(p.Method)
+		srv.AddTool(&mcp.Tool{
+			Name:        p.MCP.Name,
+			Description: p.MCP.Description,
+			InputSchema: inputSchema(md, pathVars(t.binding.Template)),
+			Annotations: annotations(t.binding.Verb),
+		}, t.handler(o))
+	}
+	if len(errs) > 0 {
+		return nil, errors.Join(errs...)
+	}
+	h := mcp.NewStreamableHTTPHandler(func(*http.Request) *mcp.Server { return srv },
+		&mcp.StreamableHTTPOptions{Stateless: true, JSONResponse: true, Logger: o.Logger})
+	return guard(o, h), nil
+}
+
+func newTool(p *routes.Policy, bindings []routes.Binding) (*tool, error) {
+	md, err := inputOf(p.Method)
+	if err != nil {
+		return nil, err
+	}
+	for _, b := range bindings {
+		if b.Method != p.Method {
+			continue
+		}
+		if err := checkTemplate(b.Template); err != nil {
+			return nil, err
+		}
+		fields := map[string]bool{}
+		fs := md.Fields()
+		for i := range fs.Len() {
+			fields[string(fs.Get(i).Name())] = true
+		}
+		return &tool{policy: p, binding: b, fields: fields}, nil
+	}
+	return nil, errors.New("sin google.api.http en un servicio registrado")
+}
+
+// inputOf devuelve el mensaje de request de "<paquete>.<Servicio>/<Método>".
+func inputOf(method string) (protoreflect.MessageDescriptor, error) {
+	d, err := protoregistry.GlobalFiles.FindDescriptorByName(protoreflect.FullName(strings.Replace(method, "/", ".", 1)))
+	if err != nil {
+		return nil, fmt.Errorf("método no registrado: %w", err)
+	}
+	m, ok := d.(protoreflect.MethodDescriptor)
+	if !ok {
+		return nil, errors.New("no es un método")
+	}
+	if m.IsStreamingClient() || m.IsStreamingServer() {
+		return nil, errors.New("los RPC con streaming no se exponen como herramienta")
+	}
+	return m.Input(), nil
+}
+
+// annotations: lo que el cliente usa para decidir qué confirma con la persona.
+func annotations(verb string) *mcp.ToolAnnotations {
+	yes, no := true, false
+	a := &mcp.ToolAnnotations{OpenWorldHint: &no}
+	switch verb {
+	case http.MethodGet:
+		a.ReadOnlyHint, a.IdempotentHint = true, true
+	case http.MethodPost:
+		a.DestructiveHint = &no
+	case http.MethodPut:
+		a.IdempotentHint = true
+	case http.MethodDelete:
+		a.DestructiveHint, a.IdempotentHint = &yes, true
+	}
+	return a
+}
+
+// guard: /mcp entero pide una credencial válida (la lista de herramientas
+// también es información). Los roles se controlan por herramienta.
+func guard(o Options, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		id, err := o.Auth.Authenticate(r)
+		switch {
+		case err == nil:
+		case errors.Is(err, auth.ErrUnavailable):
+			o.Logger.WarnContext(r.Context(), "auth no disponible", slog.String("request_id", reqctx.RequestID(r.Context())), slog.String("error", err.Error()))
+			apierror.Write(w, r, http.StatusServiceUnavailable, "UNAVAILABLE", "no se pudo verificar la credencial; reintentá en unos segundos")
+			return
+		default:
+			if o.Challenge != "" {
+				w.Header().Set("WWW-Authenticate", o.Challenge)
+			}
+			apierror.Write(w, r, http.StatusUnauthorized, "UNAUTHENTICATED", "credencial ausente o inválida")
+			return
+		}
+		if info := reqctx.From(r.Context()); info != nil {
+			info.Identity = id // para el access log
+		}
+		r.Body = http.MaxBytesReader(w, r.Body, maxRequestBytes)
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (t *tool) handler(o Options) mcp.ToolHandler {
+	return func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		start := time.Now()
+		args := map[string]any{}
+		if raw := req.Params.Arguments; len(raw) > 0 && string(raw) != "null" {
+			dec := json.NewDecoder(bytes.NewReader(raw))
+			dec.UseNumber()
+			if err := dec.Decode(&args); err != nil {
+				return errorResult(ctx, "INVALID_ARGUMENT", "los argumentos tienen que ser un objeto JSON"), nil
+			}
+		}
+		for k := range args {
+			if !t.fields[k] {
+				return errorResult(ctx, "INVALID_ARGUMENT", fmt.Sprintf("argumento desconocido %q", k)), nil
+			}
+		}
+		call, err := buildCall(t.binding.Template, t.binding.Body, args)
+		if err != nil {
+			return errorResult(ctx, "INVALID_ARGUMENT", err.Error()), nil
+		}
+
+		var header http.Header
+		if req.Extra != nil {
+			header = req.Extra.Header
+		}
+		status, body, inner := t.dispatch(ctx, o.Dispatch, header, call)
+
+		// Auditoría (docs/15 §8): una línea por llamada, con actor y resultado.
+		attrs := []any{
+			slog.String("request_id", inner.RequestID),
+			slog.String("tool", t.policy.MCP.Name),
+			slog.String("route", t.policy.Method),
+			slog.Int("status", status),
+			slog.Int64("duration_ms", time.Since(start).Milliseconds()),
+		}
+		if inner.Identity != nil {
+			attrs = append(attrs, slog.String("user_id", inner.Identity.Subject))
+		}
+		o.Logger.InfoContext(ctx, "mcp tool", attrs...)
+
+		if body == nil {
+			return errorResult(ctx, "RESOURCE_EXHAUSTED", fmt.Sprintf("la respuesta supera %d KiB; pedí menos resultados (paginación)", maxResultBytes>>10)), nil
+		}
+		return &mcp.CallToolResult{
+			Content: []mcp.Content{&mcp.TextContent{Text: string(body)}},
+			IsError: status < 200 || status > 299,
+		}, nil
+	}
+}
+
+// dispatch ejecuta el request REST equivalente contra el mux. Del cliente
+// pasan sólo las credenciales; request-id e IP salen del request a /mcp.
+// body nil = la respuesta superó maxResultBytes.
+func (t *tool) dispatch(ctx context.Context, mux http.Handler, header http.Header, call *httpCall) (int, []byte, *reqctx.Info) {
+	inner := &reqctx.Info{}
+	if outer := reqctx.From(ctx); outer != nil {
+		inner.RequestID, inner.ClientIP = outer.RequestID, outer.ClientIP
+	}
+	target := call.path
+	if len(call.query) > 0 {
+		target += "?" + call.query.Encode()
+	}
+	var rd io.Reader = http.NoBody
+	if call.body != nil {
+		rd = bytes.NewReader(call.body)
+	}
+	r, err := http.NewRequestWithContext(reqctx.With(ctx, inner), t.binding.Verb, target, rd)
+	if err != nil {
+		b, _ := json.Marshal(apierror.Body{Error: apierror.Detail{Code: "INVALID_ARGUMENT", Message: "no se pudo armar el request", RequestID: inner.RequestID}})
+		return http.StatusBadRequest, b, inner
+	}
+	if call.body != nil {
+		r.Header.Set("Content-Type", "application/json")
+	}
+	for _, h := range []string{"Authorization", auth.APIKeyHeader} {
+		if v := header.Get(h); v != "" {
+			r.Header.Set(h, v)
+		}
+	}
+	rec := &recorder{header: http.Header{}}
+	mux.ServeHTTP(rec, r)
+	if rec.over {
+		return rec.code(), nil, inner
+	}
+	return rec.code(), rec.buf.Bytes(), inner
+}
+
+func errorResult(ctx context.Context, code, msg string) *mcp.CallToolResult {
+	b, _ := json.Marshal(apierror.Body{Error: apierror.Detail{Code: code, Message: msg, RequestID: reqctx.RequestID(ctx)}})
+	return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: string(b)}}, IsError: true}
+}
+
+// recorder guarda la respuesta del mux con un tope de tamaño.
+type recorder struct {
+	header http.Header
+	status int
+	buf    bytes.Buffer
+	over   bool
+}
+
+var errTooLarge = errors.New("respuesta demasiado grande")
+
+func (r *recorder) Header() http.Header { return r.header }
+
+func (r *recorder) WriteHeader(status int) {
+	if r.status == 0 {
+		r.status = status
+	}
+}
+
+func (r *recorder) Write(p []byte) (int, error) {
+	r.WriteHeader(http.StatusOK)
+	if r.buf.Len()+len(p) > maxResultBytes {
+		r.over = true
+		return 0, errTooLarge
+	}
+	return r.buf.Write(p)
+}
+
+func (r *recorder) code() int {
+	if r.status == 0 {
+		return http.StatusOK
+	}
+	return r.status
+}

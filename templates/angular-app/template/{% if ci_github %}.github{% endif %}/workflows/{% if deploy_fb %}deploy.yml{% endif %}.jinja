@@ -19,6 +19,7 @@ on:
 permissions:
   contents: read
   id-token: write # necesario para pedir el token OIDC
+  packages: read # design system @vrojas1015/vrb en GitHub Packages
 
 jobs:
   deploy:
@@ -40,6 +41,13 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+{%- endraw %}
+        env:
+          # Design system vrb desde GitHub Packages (.npmrc). NPM_TOKEN: token clásico
+          # con read:packages; sin él se intenta con el GITHUB_TOKEN del workflow (sólo
+          # alcanza si el paquete le dio acceso a este repo).
+          NODE_AUTH_TOKEN: {% raw %}${{ secrets.NPM_TOKEN || secrets.GITHUB_TOKEN }}{% endraw %}
+{%- raw %}
       - run: npm run test:unit
       - run: npm run "$BUILD_SCRIPT"
 

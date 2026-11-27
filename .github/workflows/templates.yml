@@ -9,6 +9,14 @@ on:
 
 permissions:
   contents: read
+  packages: read # @vrojas1015/vrb (design system de angular-app y astro-site)
+
+# angular-app y astro-site instalan @vrojas1015/vrb desde GitHub Packages. El token
+# es el secret NPM_TOKEN (token clásico con read:packages) o, si el paquete le dio
+# acceso a este repo, el GITHUB_TOKEN. Sin acceso, esos jobs generan la plantilla y
+# avisan (::warning::) en vez de instalar y compilar.
+env:
+  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN || secrets.GITHUB_TOKEN }}
 
 jobs:
   go-grpc-service:
@@ -47,6 +55,38 @@ jobs:
       - name: verify.sh del plugin sobre el proyecto generado
         run: bash plugins/dev-agentes/skills/verificar/scripts/verify.sh "$RUNNER_TEMP/demo-service"
 
+  api-gateway:
+    name: api-gateway (${{ matrix.auth }}, ${{ matrix.ci }}, ${{ matrix.deploy }}, mcp=${{ matrix.mcp }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { auth: firebase, ci: gitlab, deploy: cloud-run, mcp: true }
+          - { auth: oidc,     ci: github, deploy: coolify,   mcp: false }
+          - { auth: api-key,  ci: gitlab, deploy: ninguno,   mcp: true }
+          - { auth: ninguno,  ci: github, deploy: cloud-run, mcp: false }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install copier
+      - name: Generar
+        run: |
+          copier copy --defaults --trust             -d auth=${{ matrix.auth }} -d ci_provider=${{ matrix.ci }}             -d deploy_target=${{ matrix.deploy }} -d mcp=${{ matrix.mcp }}             templates/api-gateway "$RUNNER_TEMP/gw"
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: ${{ runner.temp }}/gw/go.mod
+      - name: Build, vet, tests (incluye autorización por ruta) y govulncheck
+        working-directory: ${{ runner.temp }}/gw
+        run: |
+          go mod tidy -diff
+          go build ./...
+          go vet ./...
+          go test -count=1 ./...
+          test -z "$(gofmt -l .)"
+          go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 ./...
+
   angular-app:
     runs-on: ubuntu-latest
     strategy:
@@ -70,7 +110,18 @@ jobs:
             templates/angular-app "$RUNNER_TEMP/demo-web"
       - uses: actions/setup-node@v4
         with: { node-version: "24" }
+      - name: Acceso a @vrojas1015/vrb (GitHub Packages)
+        id: vrb
+        working-directory: ${{ runner.temp }}/demo-web
+        run: |
+          if npm view @vrojas1015/vrb version > /dev/null 2>&1; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::Sin acceso a @vrojas1015/vrb: falta el secret NPM_TOKEN (token clásico con read:packages). La plantilla se generó pero no se instaló ni se compiló."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          fi
       - name: Install, lint, tests y build
+        if: steps.vrb.outputs.ok == 'true'
         working-directory: ${{ runner.temp }}/demo-web
         run: |
           npm install --no-audit --no-fund
@@ -78,10 +129,10 @@ jobs:
           npm run test:unit
           npm run build
       - name: Imagen Docker (coolify)
-        if: matrix.deploy == 'coolify'
+        if: matrix.deploy == 'coolify' && steps.vrb.outputs.ok == 'true'
         working-directory: ${{ runner.temp }}/demo-web
         run: |
-          docker build --build-arg APP_ENV=prod -t demo-web:ci .
+          docker build --secret id=npm_token,env=NODE_AUTH_TOKEN --build-arg APP_ENV=prod -t demo-web:ci .
           docker run -d --name web -p 8080:80 demo-web:ci
           for i in $(seq 1 20); do curl -fsS -o /dev/null http://localhost:8080/ && break; sleep 1; done
           curl -fsS http://localhost:8080/ | grep -q '<app-root'
@@ -101,6 +152,16 @@ jobs:
           claude plugin validate --strict plugins/dev-agentes
       - name: Sintaxis de scripts
         run: find plugins scripts -name '*.sh' -print0 | xargs -0 -n1 bash -n
+      - name: Sintaxis de scripts PowerShell
+        shell: pwsh
+        run: |
+          $mal = 0
+          Get-ChildItem plugins, scripts -Recurse -Filter *.ps1 | ForEach-Object {
+            $e = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$null, [ref]$e)
+            if ($e) { $e | ForEach-Object { Write-Host "::error file=$($_.Extent.File),line=$($_.Extent.StartLineNumber)::$($_.Message)" }; $mal++ }
+          }
+          exit $mal
       - uses: actions/setup-go@v5
         with: { go-version: stable }
       - name: Tests de hooks
@@ -227,3 +288,302 @@ jobs:
           curl -fsS http://localhost:8080/ | grep -q 'Documentación de demo'
           curl -fsS http://localhost:8080/issues/001-issue-de-ejemplo/issue/ | grep -q 'class="metadatos"'
           curl -fsS http://localhost:8080/_generado/servicios/ | grep -q 'class="mermaid"'
+
+  # e2e-tests: genera variantes (auth × CI × web), typecheck, `playwright test
+  # --list`, YAML/actionlint, y corre la suite api contra un servidor mínimo que
+  # imita al gateway de ejemplo (.github/e2e-tests/servidor-prueba.mjs: mismas
+  # rutas, roles, errores y rate limit; levantar protos + servicio + Postgres +
+  # gateway en cada PR no se justifica). verificar.sh: la suite pasa, un
+  # @inestable que falla no bloquea y queda ⚠️, un test rojo sí bloquea, y
+  # registro.json cumple su esquema. En una variante, además, Schemathesis y
+  # k6 cortos (Docker) y la plantilla docs leyendo el registro.
+  e2e-tests:
+    name: e2e-tests (${{ matrix.auth }}, ${{ matrix.ci }}, web=${{ matrix.web }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { auth: oidc,     ci: github, web: true,  extra: true }
+          - { auth: firebase, ci: gitlab, web: false, extra: false }
+          - { auth: api-key,  ci: github, web: false, extra: false }
+          - { auth: ninguno,  ci: gitlab, web: true,  extra: false }
+    env:
+      E2E_AMBIENTE: local
+      API_BASE_URL: http://localhost:8080
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - uses: actions/setup-node@v4
+        with: { node-version: "24" }
+      - run: pip install copier jsonschema pyyaml
+      - name: Generar
+        run: |
+          copier copy --defaults --trust \
+            -d auth=${{ matrix.auth }} -d ci_provider=${{ matrix.ci }} -d web=${{ matrix.web }} \
+            -d 'ambientes=[local, qa, prod]' -d api_base_url_local=http://localhost:8080 \
+            templates/e2e-tests "$RUNNER_TEMP/e2e"
+      - name: npm install, typecheck y listado
+        working-directory: ${{ runner.temp }}/e2e
+        run: |
+          npm install --no-audit --no-fund
+          npx tsc --noEmit
+          npx playwright test --list
+          E2E_AMBIENTE=prod npx playwright test --list   # en prod: sólo @smoke, sin proyectos -inestable
+      - name: YAML válidos y actionlint
+        working-directory: ${{ runner.temp }}/e2e
+        run: |
+          python - <<'PY'
+          import pathlib, yaml
+          for p in pathlib.Path('.').rglob('*.y*ml'):
+              if 'node_modules' not in p.parts:
+                  yaml.safe_load(p.read_text(encoding='utf-8')); print('ok', p)
+          PY
+          if [ -d .github/workflows ]; then
+            cp docs/ejemplos/github-disparar-e2e.yml .github/workflows/zz-ejemplo-disparo.yml
+            git init -q
+            docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.12 -color
+            rm .github/workflows/zz-ejemplo-disparo.yml
+          fi
+      - name: Servidor de prueba
+        run: |
+          SIN_AUTH=${{ matrix.auth == 'ninguno' && '1' || '0' }} \
+            node .github/e2e-tests/servidor-prueba.mjs templates/api-gateway/template/gen/openapi/api.swagger.json &
+          for _ in $(seq 1 20); do curl -fsS -o /dev/null http://localhost:8080/v1/items && break; sleep 0.5; done
+      - name: Suite api, @inestable y registro
+        run: bash .github/e2e-tests/verificar.sh "$RUNNER_TEMP/e2e" ${{ matrix.auth }}
+      - name: Robustez (Schemathesis) y carga (k6) cortas
+        if: matrix.extra
+        working-directory: ${{ runner.temp }}/e2e
+        env:
+          OIDC_ISSUER: http://localhost:8080
+          OIDC_CLIENT_ID: e2e-tests
+          E2E_ESCRITOR_USUARIO: e2e-escritor
+          E2E_ESCRITOR_CLAVE: clave-escritor
+          E2E_LECTOR_USUARIO: e2e-lector
+          E2E_LECTOR_CLAVE: clave-lector
+          ROBUSTEZ_ROLES: anonimo,escritor
+          ROBUSTEZ_ARGS: --max-examples 5 --phases coverage,fuzzing
+          CARGA_DURACION: 5s
+        run: |
+          npm run robustez
+          sleep 11   # que se recargue el bucket de la IP antes de la ráfaga
+          npm run carga
+          CARGA_P95_MS=0.001 CARGA_DURACION=3s npm run carga -- umbrales && { echo "k6 no falló con el umbral bajado"; exit 1; } || echo "k6 falló con el umbral bajado, como corresponde"
+      - name: docs lee registro.json
+        if: matrix.extra
+        run: |
+          copier copy --defaults --trust -d org_name=demo -d ci_provider=github -d deploy_target=ninguno \
+            -d 'repos_iniciales=[protos, api-gateway]' templates/docs "$RUNNER_TEMP/docs"
+          cd "$RUNNER_TEMP/docs"
+          pip install -r requirements.txt
+          git init -q -b main && git add -A && git -c user.name=ci -c user.email=ci@example.com commit -qm base
+          bash "$GITHUB_WORKSPACE/.github/e2e-tests/docs-registro.sh" . "$RUNNER_TEMP/e2e/reportes/registro.json"
+
+  # Sitio público Astro: lint, astro check + build, test de SEO y de JSON-LD
+  # (con las páginas SSR en híbrido) y Lighthouse CI con presupuestos. Con
+  # coolify, además, la imagen sirve el sitio y da 404 real.
+  # Formato en todas las combinaciones de astro-site (48): sólo prettier, sin
+  # instalar el proyecto. La matriz de abajo compila unas pocas.
+  astro-site-formato:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install copier
+      - uses: actions/setup-node@v4
+        with: { node-version: "24" }
+      - name: prettier --check en cada combinación
+        run: bash .github/astro-site/formato.sh "$RUNNER_TEMP/formato"
+
+  astro-site:
+    name: astro-site (${{ matrix.render }}, ${{ matrix.idiomas }}, ${{ matrix.deploy }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { render: estatico, idiomas: "[es]",     blog: true,  ent: false, analytics: plausible, ci: github, deploy: coolify }
+          - { render: estatico, idiomas: "[es, en]", blog: true,  ent: true,  analytics: ga4,       ci: gitlab, deploy: firebase-hosting }
+          - { render: hibrido,  idiomas: "[es, en]", blog: false, ent: true,  analytics: ninguna,   ci: github, deploy: cloud-run }
+          - { render: estatico, idiomas: "[es]",     blog: false, ent: false, analytics: ninguna,   ci: github, deploy: firebase-hosting }
+    env:
+      PUBLIC_ENTORNO: prod
+      PUBLIC_API_FUENTE: mock
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install copier
+      - name: Generar
+        run: |
+          copier copy --defaults --trust \
+            -d render=${{ matrix.render }} -d 'idiomas=${{ matrix.idiomas }}' \
+            -d blog=${{ matrix.blog }} -d entidades_api=${{ matrix.ent }} \
+            -d analytics=${{ matrix.analytics }} -d ci_provider=${{ matrix.ci }} \
+            -d deploy_target=${{ matrix.deploy }} \
+            templates/astro-site "$RUNNER_TEMP/sitio"
+      - uses: actions/setup-node@v4
+        with: { node-version: "24" }
+      - name: Acceso a @vrojas1015/vrb (GitHub Packages)
+        id: vrb
+        working-directory: ${{ runner.temp }}/sitio
+        run: |
+          if npm view @vrojas1015/vrb version > /dev/null 2>&1; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::Sin acceso a @vrojas1015/vrb: falta el secret NPM_TOKEN (token clásico con read:packages). La plantilla se generó pero no se instaló ni se compiló."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Install, lint, astro check + build
+        if: steps.vrb.outputs.ok == 'true'
+        working-directory: ${{ runner.temp }}/sitio
+        run: |
+          npm install --no-audit --no-fund
+          npm run lint
+          npm run build
+      - name: Test de SEO y JSON-LD
+        if: steps.vrb.outputs.ok == 'true'
+        working-directory: ${{ runner.temp }}/sitio
+        run: |
+          if [ -f servidor.mjs ]; then
+            (node servidor.mjs 4322 > "$RUNNER_TEMP/server.log" 2>&1 &)
+            for _ in $(seq 1 30); do curl -fsS -o /dev/null http://localhost:4322/ && break; sleep 1; done
+            export SEO_SERVIDOR=http://localhost:4322
+            curl -s -o /dev/null -w '%{http_code}' http://localhost:4322/catalogo/no-existe/ | grep -q 404
+          fi
+          npm run test:seo
+          npm run test:jsonld
+      - name: Lighthouse CI (SEO 100, a11y ≥ 95, best practices ≥ 95, perf ≥ 90 móvil)
+        if: steps.vrb.outputs.ok == 'true'
+        working-directory: ${{ runner.temp }}/sitio
+        run: npx lhci autorun
+      - name: Imagen Docker (coolify)
+        if: matrix.deploy == 'coolify' && steps.vrb.outputs.ok == 'true'
+        working-directory: ${{ runner.temp }}/sitio
+        run: |
+          docker build --secret id=npm_token,env=NODE_AUTH_TOKEN --build-arg PUBLIC_ENTORNO=prod -t sitio:ci .
+          docker run -d --name sitio -p 8080:80 sitio:ci
+          for _ in $(seq 1 20); do curl -fsS -o /dev/null http://localhost:8080/ && break; sleep 1; done
+          curl -fsS http://localhost:8080/ | grep -q '<link rel="canonical"'
+          curl -fsS http://localhost:8080/blog/primer-post/ | grep -q 'BlogPosting'
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/no-existe/)" = 404
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/inicio/)" = 301
+
+  # App Android: checks, tests (JVM + Robolectric) y build debug en la JVM, sin
+  # emulador. ubuntu-latest trae el Android SDK (AGP baja la plataforma que falte).
+  # grpc: publica antes un protos (kotlin) en mavenLocal, como haría el co-desarrollo.
+  android-app:
+    name: android-app (${{ matrix.api }}, firebase=${{ matrix.firebase }}, ${{ matrix.ci }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      BUF_TOKEN: ${{ secrets.BUF_TOKEN }}   # opcional: evita el límite de la BSR sin autenticar
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { api: rest, firebase: true,  ci: gitlab }
+          - { api: grpc, firebase: false, ci: github }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install copier
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v6
+      - uses: bufbuild/buf-action@v1
+        if: matrix.api == 'grpc'
+        with: { setup_only: true }
+      - name: Contratos (protos con kotlin) en mavenLocal
+        if: matrix.api == 'grpc'
+        run: |
+          copier copy --defaults --trust -d org_name=miorg -d maven_group=com.miorg -d 'languages=[kotlin]' \
+            templates/protos "$RUNNER_TEMP/protos"
+          cd "$RUNNER_TEMP/protos"
+          bash scripts/generate.sh
+          cd gen/jvm && sh ./gradlew --no-daemon publishToMavenLocal
+      - name: Generar
+        run: |
+          copier copy --defaults --trust \
+            -d cliente_api=${{ matrix.api }} -d firebase=${{ matrix.firebase }} -d ci_provider=${{ matrix.ci }} \
+            -d protos_maven=com.miorg:protos:0.1.0 \
+            templates/android-app "$RUNNER_TEMP/app"
+      - name: ktlint, detekt, lint, tests y assembleDebug
+        working-directory: ${{ runner.temp }}/app
+        run: sh ./gradlew ktlintCheck detekt lint testDebugUnitTest assembleDebug
+      - name: core:model sigue siendo Kotlin puro
+        working-directory: ${{ runner.temp }}/app
+        run: |
+          printf '\ndependencies { implementation("com.google.android:android:4.1.1.4") }\n' >> core/model/build.gradle.kts
+          if sh ./gradlew :core:model:verificarKotlinPuro; then echo "verificarKotlinPuro no detectó la dependencia de Android"; exit 1; fi
+      - name: Reportes
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-app-${{ matrix.api }}-${{ matrix.ci }}
+          path: ${{ runner.temp }}/app/**/build/reports/
+          retention-days: 7
+
+  # Base común (templates/_base, docs/10): cada plantilla tiene que llevarla al
+  # día. Si falla, correr `python scripts/sincronizar-base.py` y commitear.
+  # También prueba el chequeo del título del MR/PR con títulos válidos e inválidos.
+  base-comun:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Plantillas sincronizadas con templates/_base
+        run: python scripts/sincronizar-base.py --comprobar
+      - name: AGENTS.md, CLAUDE.md y .mcp.json en un repo generado (docs/03 §8, docs/15 §4)
+        run: |
+          pip install copier
+          for mcp in false true; do
+            d="$RUNNER_TEMP/base-$mcp"
+            copier copy --defaults --trust -d org_name=demo -d tracker_mcp=$mcp templates/protos "$d"
+            test -s "$d/AGENTS.md"
+            test "$(head -1 "$d/CLAUDE.md")" = "@AGENTS.md"
+            python - "$d" "$mcp" <<'PY'
+          import json, sys
+          d, mcp = sys.argv[1], sys.argv[2] == "true"
+          servidores = json.load(open(f"{d}/.mcp.json"))["mcpServers"]
+          assert list(servidores) == (["tracker"] if mcp else []), servidores
+          allow = json.load(open(f"{d}/.claude/settings.json"))["permissions"]["allow"]
+          assert "mcp__tracker__get_issue" in allow, allow
+          PY
+          done
+      - name: bootstrap del workspace (plantilla docs, docs/01)
+        env:
+          GIT_AUTHOR_NAME: ci
+          GIT_AUTHOR_EMAIL: ci@example.com
+          GIT_COMMITTER_NAME: ci
+          GIT_COMMITTER_EMAIL: ci@example.com
+        run: |
+          r="$RUNNER_TEMP/ws"
+          copier copy --defaults --trust -d org_name=demo templates/docs "$r/docs"
+          git init -q -b main "$RUNNER_TEMP/origen" && git -C "$RUNNER_TEMP/origen" commit -q --allow-empty -m init
+          printf 'backend/protos %s\n' "$RUNNER_TEMP/origen" > "$r/docs/workspace/repos.txt"
+          bash "$r/docs/workspace/bootstrap.sh"
+          bash "$r/docs/workspace/bootstrap.sh"   # idempotente
+          test -d "$r/backend/protos/.git"
+          test "$(cat "$r/CLAUDE.md")" = "@docs/workspace/CLAUDE.md"
+          test "$(cat "$r/backend/CLAUDE.md")" = "@../docs/workspace/backend/AGENTS.md"
+          grep -q "no editar" "$r/frontend/AGENTS.md"
+          mkdir -p "$RUNNER_TEMP/OneDrive/x" && cp -r "$r/docs" "$RUNNER_TEMP/OneDrive/x/"
+          if bash "$RUNNER_TEMP/OneDrive/x/docs/workspace/bootstrap.sh"; then echo "corrió dentro de OneDrive"; exit 1; fi
+      - name: Chequeo del título del MR/PR
+        run: |
+          v=templates/_base/scripts/verificar-titulo.sh
+          for t in 'feat(issue-42): tope de descuento' 'fix(issue-7)!: total sin envío' \
+                   'Draft: docs(issue-3,api): paginación' 'chore(deps): update grpc to v1.75.0'; do
+            sh "$v" "$t"
+          done
+          for t in 'feat: sin issue' 'tope de descuento' 'feat(api): sin issue' 'feature(issue-1): tipo' 'fix(deps): x'; do
+            if sh "$v" "$t" 2>/dev/null; then echo "aceptó un título inválido: $t"; exit 1; fi
+          done

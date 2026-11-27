@@ -1,9 +1,10 @@
+// Base tipográfica sobre vrb: familia, colores y enlaces salen de `--vrb-*`.
 body {
-  font-family: var(--font-sans);
+  font-family: var(--vrb-font-sans);
   font-size: var(--text-body);
   line-height: 1.5;
-  color: var(--text-primary);
-  background: var(--surface-muted);
+  color: var(--vrb-fg);
+  background: var(--vrb-bg);
 }
 
 h1,
@@ -19,4 +20,12 @@ h1 {
 
 h2 {
   font-size: var(--text-h2);
+}
+
+a {
+  color: var(--vrb-brand);
+}
+
+a:hover {
+  color: var(--vrb-fg);
 }

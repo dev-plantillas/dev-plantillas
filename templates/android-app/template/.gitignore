@@ -1,0 +1,36 @@
+# >>> base común (se actualiza con copier update; lo propio va fuera del bloque)
+# Secretos: nunca al repo. Si uno se commiteó, se rota primero (SECURITY.md).
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+*-adminsdk-*.json
+service-account*.json
+google-services.json
+GoogleService-Info.plist
+# <<< base común
+
+# Gradle / Android Studio
+.gradle/
+.kotlin/
+build/
+local.properties
+.idea/
+*.iml
+captures/
+.externalNativeBuild/
+.cxx/
+.DS_Store
+
+# Secretos: NUNCA al repo (docs/firebase.md, docs/play-console.md)
+google-services.json
+*.jks
+*.keystore
+*.p12
+service-account*.json
+play-credentials*.json

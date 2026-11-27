@@ -3,7 +3,7 @@ import { RouterLink } from '@angular/router';
 {%- if i18n %}
 import { TranslatePipe } from '@ngx-translate/core';
 {%- endif %}
-
+import { ShellNav } from '@/app/layout/shell/shell-nav';
 import { Button } from '@/app/ui/components/button/button';
 import { ItemsStore } from '../../data-access/items.store';
 {%- if not i18n %}
@@ -25,11 +25,13 @@ const STATUS_LABEL: Record<ItemStatus, string> = {
 })
 export class ItemList implements OnInit {
   protected readonly store = inject(ItemsStore);
+  private readonly nav = inject(ShellNav);
 {%- if not i18n %}
   protected readonly statusLabel = STATUS_LABEL;
 {%- endif %}
 
   ngOnInit(): void {
+    this.nav.set([{% if i18n %}{ label: 'items.list.title', translate: true }{% else %}{ label: 'Ítems' }{% endif %}]);
     this.store.load();
   }
 }

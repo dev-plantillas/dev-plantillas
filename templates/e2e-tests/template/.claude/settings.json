@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run typecheck:*)",
+      "Bash(npm run listar:*)",
+      "Bash(npm run registro:*)",
+      "Bash(npx playwright test --list:*)",
+      "Bash(npx tsc --noEmit:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git branch:*)",
+      "Bash(git ls-files:*)",
+      "Bash(ls:*)",
+      "Bash(pre-commit run:*)",
+      "Bash(gitleaks git:*)",
+      "Bash(gitleaks dir:*)",
+      "Bash(sh scripts/verificar-titulo.sh:*)",
+      "mcp__tracker__list_issues",
+      "mcp__tracker__get_issue",
+      "mcp__tracker__next_issue",
+      "mcp__tracker__report_status"
+    ],
+    "deny": [
+      "Read(./ambientes/*.env)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Bash(npm run token:*)",
+      "Read(./**/*.pem)",
+      "Read(./**/*.key)",
+      "Read(./**/*.p12)",
+      "Read(./**/*.jks)",
+      "Read(./**/*.keystore)",
+      "Read(./**/*-adminsdk-*.json)"
+    ]
+  }
+}

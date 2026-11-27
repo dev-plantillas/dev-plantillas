@@ -5,26 +5,38 @@ guías de cómo se organizan carpetas, repos y trabajo con agentes.
 
 ## Contenido
 
+Estado y prioridades: [`ROADMAP.md`](ROADMAP.md).
+
 | Ruta | Qué es |
 |---|---|
+| `templates/_base/` | Base común de todas las plantillas (gitleaks, `.gitignore` de secretos, `SECURITY.md`, `CODEOWNERS`, plantilla de MR/PR, CI de secretos y del título); no es una plantilla: la copia `scripts/sincronizar-base.py` |
 | `templates/go-grpc-service/` | Plantilla Copier: microservicio Go gRPC hexagonal + Postgres + Cloud Run |
 | `templates/protos/` | Plantilla Copier: repo de contratos gRPC con buf; código para Go, Python, TS/JS, Java, Kotlin y Swift |
+| `templates/api-gateway/` | Plantilla Copier: API gateway REST→gRPC (grpc-gateway) con auth, autorización por ruta, rate limit y límites |
 | `templates/angular-app/` | Plantilla Copier: app Angular standalone + signals + Firebase Hosting |
+| `templates/astro-site/` | Plantilla Copier: sitio público Astro 7 (SSG o híbrido) + islas de React con SEO técnico, JSON-LD tipado, sitemap/robots por ambiente y Lighthouse CI |
+| `templates/android-app/` | Plantilla Copier: app Android nativa (Kotlin + Compose + Material 3, Hilt, Room offline primero), cliente REST del gateway o gRPC, Firebase opcional, Google Play por CI |
 | `templates/docs/` | Plantilla Copier: repo central de documentación (issues por carpeta, ADRs, runbooks, releases) con frontmatter validado, índices generados y MkDocs Material |
 | `plugins/dev-agentes/` | Plugin de Claude Code: skills, agentes y hooks del flujo de trabajo |
-| `.claude-plugin/` | Marketplace: permite instalar el plugin con `/plugin marketplace add vrojas1015/dev-plantillas` |
-| `workspace/` | `CLAUDE.md` en capas (plataforma, backend, frontend) y lista de repos |
-| `scripts/bootstrap.ps1` | Arma `C:\dev\<org>` en una máquina nueva |
-| `scripts/new-worktree.ps1` | Crea los worktrees de un issue |
+| `.claude-plugin/` | Marketplace: permite instalar el plugin con `/plugin marketplace add dev-plantillas/dev-plantillas` |
+| `scripts/new-worktree.ps1` | Crea los worktrees de un issue (workspace o repo único); con `-Herdr` abre la sesión en herdr (`docs/03` §13) |
+| `scripts/sincronizar-base.py` | Copia `templates/_base` a cada plantilla; `--comprobar` falla si alguna quedó desactualizada (lo corre el CI) |
 | `scripts/publish-template.sh` | Publica una plantilla en su propio repo con tag |
 | `docs/01-estructura-de-carpetas.md` | Layout local del equipo |
 | `docs/02-repositorios-gitlab-github.md` | Organización, nombres, protección y CI en GitLab/GitHub |
-| `docs/03-flujo-de-trabajo.md` | Issue → worktree → sesión → MR, con varios agentes en paralelo |
+| `docs/03-flujo-de-trabajo.md` | Issue → worktree → sesión → MR; actores, tipos de sesión, estados de los agentes, tracker y coordinación entre sesiones |
 | `docs/04-stack-y-despliegue.md` | Stack Google primero, destinos de deploy (Google o Coolify) y cómo migrar entre ellos |
 | `docs/05-api-gateway.md` | Diseño y seguridad del API gateway (OWASP API Top 10): especificación de la plantilla |
 | `docs/06-documentacion.md` | Diseño del repo de documentación (issues, ADRs, runbooks, MkDocs): especificación de la plantilla |
 | `docs/07-frontend-y-seo.md` | Qué plantilla de front usar y especificación de `astro-site` (SEO técnico, Core Web Vitals, Lighthouse CI) |
 | `docs/08-cli-dp.md` | Especificación de la CLI `dp`: catálogo, `new`, `update`, workspace e issues; hitos en modo pair |
+| `docs/09-movil-android.md` | Decisión de móvil (Android nativo primero, camino a iOS con KMP) y especificación de `android-app` |
+| `docs/10-base-comun-de-repos.md` | Base común de todos los repos: seguridad, Renovate, protección de ramas, releases y conexión con el repo de documentación |
+| `docs/11-pipelines.md` | Repo `ci` de pipelines reutilizables (GitHub reusable workflows y GitLab CI/CD components) |
+| `docs/12-pruebas.md` | Pruebas dentro del flujo de desarrollo (controles por etapa, trazabilidad, bugs e inestables) y especificación de `e2e-tests` |
+| `docs/13-elegir-tecnologia.md` | Qué lenguaje de backend y qué herramienta de front o móvil usar según el problema, y el costo de sumar una tecnología |
+| `docs/14-observabilidad.md` | Trazas, métricas, logs correlacionados, SLOs y alertas con OpenTelemetry (Google o Grafana en Coolify) |
+| `docs/15-mcp.md` | MCP: servidores que consumen los agentes (`.mcp.json`, permisos, seguridad) y cómo un proyecto expone el suyo (opción `mcp: true` del gateway) |
 
 ## Requisitos
 
@@ -34,24 +46,29 @@ guías de cómo se organizan carpetas, repos y trabajo con agentes.
 
 ## Uso rápido
 
-```powershell
-# Máquina nueva
-git clone <url>/dev-plantillas C:\dev\<org>\plantillas
-C:\dev\<org>\plantillas\scripts\bootstrap.ps1 -Org <org>
+Las plantillas publicadas viven en la organización [`dev-plantillas`](https://github.com/dev-plantillas), una por repo (`gh:dev-plantillas/template-<nombre>`); este monorepo es donde se desarrollan.
 
+Máquina nueva: se clona el repo de documentación del proyecto (plantilla
+`docs`) y se corre su `workspace/bootstrap` (`docs/01`). Lo demás, desde la raíz
+del workspace:
+
+```bash
 # Servicio nuevo
-python -m copier copy --vcs-ref v1.0.0 <url>/template-go-grpc-service C:\dev\<org>\backend\agenda-service
+python -m copier copy --vcs-ref v1.0.0 <url>/template-go-grpc-service backend/agenda-service
 
 # App nueva
-python -m copier copy --vcs-ref v1.0.0 <url>/template-angular-app C:\dev\<org>\frontend\admin-web
+python -m copier copy --vcs-ref v1.0.0 <url>/template-angular-app frontend/admin-web
 
 # Traer mejoras de la plantilla a un repo existente
-cd C:\dev\<org>\backend\agenda-service; python -m copier update
+cd backend/agenda-service && python -m copier update
 ```
 
 ## Cambiar una plantilla
 
-1. Rama en este repo, cambio en `templates/<nombre>/`.
+1. Rama en este repo, cambio en `templates/<nombre>/`. Lo común a todas
+   (seguridad, plantilla de MR/PR, CI de secretos) se cambia en
+   `templates/_base/` y se copia con `python scripts/sincronizar-base.py`
+   (`docs/10` §11).
 2. Generar un proyecto de prueba y verificar (build + tests); cada plantilla
    documenta cómo en su `README.md`.
 3. MR. Al mergear: `scripts/publish-template.sh <nombre> vX.Y.Z <remote>`.

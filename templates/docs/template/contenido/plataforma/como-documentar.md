@@ -9,7 +9,7 @@ vive acá.
 
 | Junto al código (cada repo) | Este repo |
 |---|---|
-| `README.md`, `CLAUDE.md`, `docs/` de uso y deploy, `CHANGELOG.md` | Issues, ADRs, arquitectura, fichas de servicios, runbooks, postmortems, casos de uso, releases |
+| `README.md`, `AGENTS.md`, `docs/` de uso y deploy, `CHANGELOG.md` | Issues, ADRs, arquitectura, fichas de servicios, runbooks, postmortems, casos de uso, releases |
 
 La ficha de un servicio es corta y **enlaza** al README del repo; no lo duplica.
 

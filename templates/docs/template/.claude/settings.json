@@ -18,7 +18,15 @@
       "Bash(git fetch:*)",
       "Bash(git ls-files:*)",
       "Bash(git branch --show-current)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(pre-commit run:*)",
+      "Bash(gitleaks git:*)",
+      "Bash(gitleaks dir:*)",
+      "Bash(sh scripts/verificar-titulo.sh:*)",
+      "mcp__tracker__list_issues",
+      "mcp__tracker__get_issue",
+      "mcp__tracker__next_issue",
+      "mcp__tracker__report_status"
     ],
     "deny": [
       "Read(./.env)",
@@ -28,7 +36,13 @@
       "Bash(firebase deploy:*)",
       "Bash(npx firebase-tools deploy:*)",
       "Bash(git push:*)",
-      "Bash(docker push:*)"
+      "Bash(docker push:*)",
+      "Read(./**/*.pem)",
+      "Read(./**/*.key)",
+      "Read(./**/*.p12)",
+      "Read(./**/*.jks)",
+      "Read(./**/*.keystore)",
+      "Read(./**/*-adminsdk-*.json)"
     ]
   }
 }

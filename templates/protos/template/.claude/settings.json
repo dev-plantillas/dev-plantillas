@@ -33,12 +33,26 @@
       "Bash(git describe:*)",
       "Bash(git rev-parse:*)",
       "Bash(git ls-files:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(pre-commit run:*)",
+      "Bash(gitleaks git:*)",
+      "Bash(gitleaks dir:*)",
+      "Bash(sh scripts/verificar-titulo.sh:*)",
+      "mcp__tracker__list_issues",
+      "mcp__tracker__get_issue",
+      "mcp__tracker__next_issue",
+      "mcp__tracker__report_status"
     ],
     "deny": [
       "Read(./.env)",
       "Read(./.env.*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Read(./**/*.pem)",
+      "Read(./**/*.key)",
+      "Read(./**/*.p12)",
+      "Read(./**/*.jks)",
+      "Read(./**/*.keystore)",
+      "Read(./**/*-adminsdk-*.json)"
     ]
   }
 }

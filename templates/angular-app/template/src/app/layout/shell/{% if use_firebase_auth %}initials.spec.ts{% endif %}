@@ -1,0 +1,27 @@
+import { describe, expect, it } from 'vitest';
+
+import { initialsOf } from './initials';
+
+describe('initialsOf', () => {
+  it('toma la primera letra de las dos primeras palabras del nombre', () => {
+    expect(initialsOf({ displayName: 'Ana María López', email: null })).toBe('AM');
+  });
+
+  it('con una sola palabra usa sus dos primeras letras', () => {
+    expect(initialsOf({ displayName: 'ana', email: null })).toBe('AN');
+  });
+
+  it('sin nombre (o sólo espacios) usa el inicio del correo', () => {
+    expect(initialsOf({ displayName: '   ', email: 'ana.lopez@example.com' })).toBe('AL');
+    expect(initialsOf({ email: 'x@example.com' })).toBe('X');
+  });
+
+  it('no parte caracteres fuera del plano básico', () => {
+    expect(initialsOf({ displayName: '😀 Ana', email: null })).toBe('😀A');
+    expect(initialsOf({ displayName: '😀', email: null })).toBe('😀');
+  });
+
+  it('sin usuario devuelve vacío', () => {
+    expect(initialsOf(null)).toBe('');
+  });
+});

@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 {%- endif %}
 
+import { ShellNav } from '@/app/layout/shell/shell-nav';
 import { ItemsStore } from '../../data-access/items.store';
 
 @Component({
@@ -16,6 +17,7 @@ import { ItemsStore } from '../../data-access/items.store';
 })
 export class ItemDetail {
   protected readonly store = inject(ItemsStore);
+  private readonly nav = inject(ShellNav);
 
   /** Viene del path `:id` (withComponentInputBinding en app.config.ts). */
   readonly id = input.required<string>();
@@ -23,5 +25,11 @@ export class ItemDetail {
   constructor() {
     // Cada vez que cambia el id de la URL, el store carga ese item.
     effect(() => this.store.select(this.id()));
+    // Migas del shell: Ítems › <nombre del ítem> (cuando ya cargó).
+    effect(() => {
+      const item = this.store.selected();
+      const list = {% if i18n %}{ label: 'items.list.title', translate: true, link: ['/items'] }{% else %}{ label: 'Ítems', link: ['/items'] }{% endif %};
+      this.nav.set(item ? [list, { label: item.name }] : [list]);
+    });
   }
 }

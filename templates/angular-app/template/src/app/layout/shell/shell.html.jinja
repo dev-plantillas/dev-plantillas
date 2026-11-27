@@ -1,36 +1,108 @@
-{%- raw -%}
-<header class="shell__header">
-  <a class="shell__brand" routerLink="/">{{ title }}</a>
 
-  <nav class="shell__nav">
-    <a class="shell__nav-link" routerLink="/items" routerLinkActive="shell__nav-link--active">
-{%- endraw %}
-{%- if i18n %}
-      {% raw %}{{ 'shell.nav.items' | translate }}{% endraw %}
-{%- else %}
-      Ítems
-{%- endif %}
-    </a>
-  </nav>
+{#- Textos: con i18n, claves de public/i18n; sin i18n, fijos en español. -#}
+{%- macro t(key, text) -%}
+{%- if i18n %}{{ '{{ ' }}'{{ key }}' | translate{{ ' }}' }}{% else %}{{ text }}{% endif -%}
+{%- endmacro -%}
+{%- macro attr(name, key, text) -%}
+{%- if i18n %}[attr.{{ name }}]="'{{ key }}' | translate"{% else %}{{ name }}="{{ text }}"{% endif -%}
+{%- endmacro -%}
+<a class="shell__skip" href="#contenido">{{ t('shell.skip', 'Saltar al contenido') }}</a>
+
+<div class="vrb-shell" [attr.data-sidebar-open]="menuOpen() || null">
+  <aside id="shell-sidebar" class="vrb-sidebar" {{ attr('aria-label', 'shell.nav.label', 'Principal') }}>
+    <div class="vrb-sidebar__header">
+      <a class="shell__brand" routerLink="/">{% raw %}{{ title }}{% endraw %}</a>
+    </div>
+
+    <nav class="vrb-sidebar__content">
+      <div class="vrb-sidebar__group">
+        <ul class="vrb-sidebar__menu">
+          <li>
+            <a
+              class="vrb-sidebar__link"
+              routerLink="/items"
+              routerLinkActive
+              ariaCurrentWhenActive="page"
+            >
+              <ui-icon name="list" />
+              <span class="vrb-sidebar__text">{{ t('shell.nav.items', 'Ítems') }}</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </nav>
 {%- if use_firebase_auth %}
 
-  <div class="shell__user">
+    <div class="vrb-sidebar__footer">
+      <span class="shell__avatar" aria-hidden="true">{% raw %}{{ initials() }}{% endraw %}</span>
+      <span class="shell__user">
 {%- raw %}
-    @if (session.user(); as user) {
-      <span class="shell__user-email">{{ user.email }}</span>
-    }
+        @if (session.user(); as user) {
+          @if (user.displayName) {
+            <b class="shell__user-name">{{ user.displayName }}</b>
+          }
+          <small class="shell__user-email">{{ user.email }}</small>
+        }
 {%- endraw %}
+      </span>
+      <button
+        type="button"
+        class="vrb-button vrb-button--ghost vrb-button--icon vrb-button--sm"
 {%- if i18n %}
-    <ui-button variant="ghost" size="sm" (pressed)="logout()">
-      {% raw %}{{ 'shell.logout' | translate }}{% endraw %}
-    </ui-button>
+        [attr.aria-label]="'shell.logout' | translate"
+        [title]="'shell.logout' | translate"
 {%- else %}
-    <ui-button variant="ghost" size="sm" (pressed)="logout()">Cerrar sesión</ui-button>
+        aria-label="Cerrar sesión"
+        title="Cerrar sesión"
 {%- endif %}
-  </div>
+        (click)="logout()"
+      >
+        <ui-icon name="logout" />
+      </button>
+    </div>
 {%- endif %}
-</header>
+  </aside>
 
-<main class="shell__main">
-  <router-outlet />
-</main>
+  <div class="vrb-shell__scrim" aria-hidden="true" (click)="closeMenu()"></div>
+
+  <div class="vrb-shell__main">
+    <header class="vrb-shell__header">
+      <button
+        type="button"
+        class="vrb-button vrb-button--ghost vrb-button--icon vrb-shell__menu-button"
+        aria-controls="shell-sidebar"
+        [attr.aria-expanded]="menuOpen()"
+        {{ attr('aria-label', 'shell.openMenu', 'Abrir menú') }}
+        (click)="toggleMenu()"
+      >
+        <ui-icon name="menu" />
+      </button>
+      @if (nav.crumbs().length) {
+        <nav class="vrb-breadcrumb" {{ attr('aria-label', 'shell.breadcrumb', 'Ruta') }}>
+          <ol class="vrb-breadcrumb__list">
+            @for (crumb of nav.crumbs(); track $index) {
+              <li class="vrb-breadcrumb__item">
+{%- if i18n %}
+                @let label = crumb.translate ? (crumb.label | translate) : crumb.label;
+{%- else %}
+                @let label = crumb.label;
+{%- endif %}
+{%- raw %}
+                @if (crumb.link) {
+                  <a class="vrb-breadcrumb__link" [routerLink]="crumb.link">{{ label }}</a>
+                } @else {
+                  <span class="vrb-breadcrumb__page" aria-current="page">{{ label }}</span>
+                }
+{%- endraw %}
+              </li>
+            }
+          </ol>
+        </nav>
+      }
+    </header>
+
+    <main id="contenido" class="vrb-shell__content shell__content" tabindex="-1">
+      <router-outlet />
+    </main>
+  </div>
+</div>

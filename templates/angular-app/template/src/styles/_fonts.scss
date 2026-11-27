@@ -1,0 +1,25 @@
+// IBM Plex del design system vrb. Los .woff2 se copian desde
+// @vrojas1015/vrb/design-system/fonts a /fonts (assets de angular.json).
+$faces: (
+  'IBM Plex Sans': (
+    'IBMPlexSans',
+    (400, 500, 600, 700),
+  ),
+  'IBM Plex Mono': (
+    'IBMPlexMono',
+    (400, 500, 600),
+  ),
+);
+
+@each $family, $face in $faces {
+  $file: nth($face, 1);
+  @each $weight in nth($face, 2) {
+    @font-face {
+      font-family: $family;
+      font-style: normal;
+      font-weight: $weight;
+      font-display: swap;
+      src: url('/fonts/#{$file}-#{$weight}.woff2') format('woff2');
+    }
+  }
+}

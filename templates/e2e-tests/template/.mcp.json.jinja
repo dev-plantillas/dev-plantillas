@@ -1,0 +1,16 @@
+{#- Base común: se edita en templates/_base (y la sección propia en pr-propio.md) y se copia con scripts/sincronizar-base.py. -#}
+{
+{%- if tracker_mcp %}
+  "mcpServers": {
+    "tracker": {
+      "type": "http",
+      "url": "${TRACKER_MCP_URL}",
+      "headers": {
+        "Authorization": "Bearer ${TRACKER_TOKEN}"
+      }
+    }
+  }
+{%- else %}
+  "mcpServers": {}
+{%- endif %}
+}

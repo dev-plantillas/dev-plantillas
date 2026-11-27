@@ -18,10 +18,11 @@ docs/
 ├── mkdocs.yml                     # docs_dir: contenido, strict, Mermaid, búsqueda, modo oscuro, hook
 ├── Makefile                       # nuevo, validar, generar, servir, construir (+ instalar)
 ├── requirements.txt               # versiones fijas
-├── CLAUDE.md, .claude/settings.json, README.md
+├── AGENTS.md, CLAUDE.md, .claude/settings.json, .mcp.json, README.md
 ├── esquemas/*.schema.json         # issue, plan, adr, servicio, runbook, postmortem, release
 ├── scripts/                       # nuevo.py, validar.py, generar.py, hook_mkdocs.py, comun.py
 ├── _plantillas/                   # issue, plan, adr, runbook, postmortem, release, servicio
+├── workspace/                     # capas de plataforma (AGENTS.md raíz, backend/, frontend/), repos.txt, bootstrap.ps1/.sh
 ├── contenido/
 │   ├── index.md, estilos/extra.css
 │   ├── plataforma/                # índice, arquitectura (Mermaid), ambientes, glosario, cómo documentar
@@ -62,12 +63,14 @@ git add . && git commit -m "docs: scaffold inicial"
 | Pregunta | Default | Uso |
 |---|---|---|
 | `org_name` | `mi-org` | Grupo/owner; base de `url_repo` de las fichas y de `repo_url` del sitio |
-| `titulo_sitio` | `Documentación de <org>` | `site_name`, `index.md`, `CLAUDE.md` |
+| `titulo_sitio` | `Documentación de <org>` | `site_name`, `index.md`, `AGENTS.md` |
 | `repos_iniciales` | `[protos, api-gateway]` | Lista YAML (kebab-case, sin repetidos). Una ficha por repo, repos del issue 001 y mapa inicial |
 | `obsidian` | `true` | `contenido/.obsidian/` mínimo |
 | `deploy_target` | `ninguno` | `firebase-hosting` \| `coolify` \| `ninguno` |
 | `firebase_project` | `<org>-docs` | Sólo firebase-hosting |
 | `ci_provider` | `gitlab` | `gitlab` \| `github` |
+| `dueño` | `@<org_name>/plataforma` | `CODEOWNERS` y `SECURITY.md` (`@usuario` o `@org/equipo`; base común, `docs/10` de dev-plantillas) |
+| `docs_repo` | vacío | URL del repo de docs: la plantilla de MR/PR enlaza la carpeta del issue ahí |
 | `fecha_inicio` | hoy | Fecha del ADR 0001 y del issue 001. Se guarda en las respuestas: `copier update` no cambia las fechas |
 
 Derivados (no se guardan): `deploy_fb`, `deploy_cy`, `ci_gl`, `ci_gh` (flags
@@ -125,6 +128,17 @@ cortos para nombres condicionales: rutas de Windows), `url_org` y `tipos_repo`
   `DOCS_HASH`), con `/salud` libre para el healthcheck.
 - **lychee sólo en la rama principal**; excluye `localhost`, `example.*` y los
   repos de la propia org (suelen ser privados).
+- **Estado de escenarios e2e (opcional, docs/12 §3)**: con `REGISTRO_E2E`
+  (ruta o URL al `registro.json` de la plantilla `e2e-tests`; token opcional
+  `REGISTRO_E2E_TOKEN`), `generar.py` escribe `_generado/escenarios.md` y
+  `validar.py` rechaza un issue `resuelto` con un escenario `CU-<id>-<n>` sin
+  test o que no está ✅ (`scripts/escenarios.py`, sólo stdlib). Esa página es
+  una foto de otro repo: está en `.gitignore`, `--comprobar` y el control de
+  generados del CI la ignoran, y sin `REGISTRO_E2E` no existe. **Sin la
+  variable no cambia nada**. Los ids `CU-…` dentro de comentarios HTML no
+  cuentan. Limitación: los deploys que reconstruyen el sitio (imagen de
+  Coolify, `deploy.yml` de GitHub) no incluyen la página salvo que corran
+  `make generar` con la variable antes del build.
 - El job que en `main` regenera y commitea solo (spec §5) **no** se incluye:
   necesita un token con permiso de push. El CI falla y se corre `make generar`.
 

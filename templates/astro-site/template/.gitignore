@@ -1,0 +1,52 @@
+# >>> base común (se actualiza con copier update; lo propio va fuera del bloque)
+# Secretos: nunca al repo. Si uno se commiteó, se rota primero (SECURITY.md).
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+*-adminsdk-*.json
+service-account*.json
+google-services.json
+GoogleService-Info.plist
+# <<< base común
+
+# Build de Astro
+/dist
+/.astro
+
+# Node
+/node_modules
+npm-debug.log*
+# .npmrc sí se versiona: sólo apunta @vrojas1015 a GitHub Packages; el token va en NODE_AUTH_TOKEN.
+
+# Variables de entorno (nunca se commitean secretos; .env.example sí)
+.env
+.env.*
+!.env.example
+
+# Lighthouse CI / lychee
+/.lighthouseci
+/.lycheecache
+
+# Firebase
+.firebase/
+firebase-debug.log*
+
+# IDEs
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Claude Code: se comparte settings.json, no lo local
+.claude/settings.local.json
+.claude/worktrees/
+
+# SO
+.DS_Store
+Thumbs.db
+*.log

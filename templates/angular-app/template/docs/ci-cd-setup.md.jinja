@@ -303,3 +303,28 @@ Esta app se generó con `deploy_target = ninguno`: el CI sólo verifica. Para su
 deploy más adelante, correr `copier update` y cambiar la respuesta `deploy_target`
 a `firebase-hosting` o `coolify`.
 {%- endif %}
+
+## Paquetes privados (design system vrb)
+
+`npm ci` instala `@vrojas1015/vrb` desde GitHub Packages. `.npmrc` (versionado, sin
+token) apunta el scope `@vrojas1015` a `npm.pkg.github.com` y lee el token de
+`NODE_AUTH_TOKEN`; el CI lo llena con `NPM_TOKEN`:
+
+1. Crear un token **clásico** de GitHub con scope `read:packages` (idealmente de una
+   cuenta de servicio con acceso al paquete, no personal).
+{%- if ci_provider == 'gitlab' %}
+2. *Settings › CI/CD › Variables* → `NPM_TOKEN`, **Masked**, sin scope de environment
+   (lo usan todos los jobs que corren `npm ci`{% if deploy_target == 'coolify' %} y el `docker build`, como secret de BuildKit{% endif %}).
+{%- else %}
+2. *Settings › Secrets and variables › Actions › Secrets* → `NPM_TOKEN`. Sin él, los
+   workflows intentan con el `GITHUB_TOKEN` (`packages: read`), que sólo alcanza si el
+   paquete le dio acceso a este repo (*Package settings › Manage Actions access*); el
+   `GITHUB_TOKEN` de un repo de otra cuenta u organización no puede leerlo.
+{%- endif %}
+3. En local: `NODE_AUTH_TOKEN=$(gh auth token) npm ci` (el token de `gh` necesita
+   `read:packages`: `gh auth refresh -s read:packages`).
+{%- if deploy_target == 'coolify' %}
+
+La imagen Docker recibe el token como secret de BuildKit (`--secret
+id=npm_token,env=NODE_AUTH_TOKEN`): no queda en ninguna capa.
+{%- endif %}

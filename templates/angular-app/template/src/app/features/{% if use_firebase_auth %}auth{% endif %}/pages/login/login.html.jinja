@@ -1,26 +1,39 @@
 {%- if i18n -%}
 {%- raw -%}
 <main class="login">
-  <form class="login__card" [formGroup]="form" (ngSubmit)="submit()">
-    <h1 class="login__title">{{ 'auth.login.title' | translate }}</h1>
+  <form class="vrb-card login__card" [formGroup]="form" (ngSubmit)="submit()">
+    <h1 class="vrb-card__title">{{ 'auth.login.title' | translate }}</h1>
 
-    <label class="login__field">
-      <span class="login__label">{{ 'auth.login.email' | translate }}</span>
-      <input class="login__input" type="email" formControlName="email" autocomplete="email" />
-    </label>
-
-    <label class="login__field">
-      <span class="login__label">{{ 'auth.login.password' | translate }}</span>
+    <div class="vrb-field">
+      <label class="vrb-field__label" for="login-email">{{ 'auth.login.email' | translate }}</label>
       <input
-        class="login__input"
+        class="vrb-input"
+        id="login-email"
+        type="email"
+        formControlName="email"
+        autocomplete="email"
+      />
+    </div>
+
+    <div class="vrb-field">
+      <label class="vrb-field__label" for="login-password">{{
+        'auth.login.password' | translate
+      }}</label>
+      <input
+        class="vrb-input"
+        id="login-password"
         type="password"
         formControlName="password"
         autocomplete="current-password"
       />
-    </label>
+    </div>
 
     @if (failed()) {
-      <p class="login__error" role="alert">{{ 'auth.login.error' | translate }}</p>
+      <div class="vrb-alert vrb-alert--danger" role="alert">
+        <div class="vrb-alert__body">
+          <p class="vrb-alert__description">{{ 'auth.login.error' | translate }}</p>
+        </div>
+      </div>
     }
 
     <ui-button type="submit" [loading]="loading()" [disabled]="form.invalid" [fullWidth]="true">
@@ -31,26 +44,37 @@
 {%- endraw -%}
 {%- else -%}
 <main class="login">
-  <form class="login__card" [formGroup]="form" (ngSubmit)="submit()">
-    <h1 class="login__title">Iniciar sesión</h1>
+  <form class="vrb-card login__card" [formGroup]="form" (ngSubmit)="submit()">
+    <h1 class="vrb-card__title">Iniciar sesión</h1>
 
-    <label class="login__field">
-      <span class="login__label">Email</span>
-      <input class="login__input" type="email" formControlName="email" autocomplete="email" />
-    </label>
-
-    <label class="login__field">
-      <span class="login__label">Contraseña</span>
+    <div class="vrb-field">
+      <label class="vrb-field__label" for="login-email">Email</label>
       <input
-        class="login__input"
+        class="vrb-input"
+        id="login-email"
+        type="email"
+        formControlName="email"
+        autocomplete="email"
+      />
+    </div>
+
+    <div class="vrb-field">
+      <label class="vrb-field__label" for="login-password">Contraseña</label>
+      <input
+        class="vrb-input"
+        id="login-password"
         type="password"
         formControlName="password"
         autocomplete="current-password"
       />
-    </label>
+    </div>
 
     @if (failed()) {
-      <p class="login__error" role="alert">No pudimos iniciar sesión. Revisá tus datos.</p>
+      <div class="vrb-alert vrb-alert--danger" role="alert">
+        <div class="vrb-alert__body">
+          <p class="vrb-alert__description">No pudimos iniciar sesión. Revisa tus datos.</p>
+        </div>
+      </div>
     }
 
     <ui-button type="submit" [loading]="loading()" [disabled]="form.invalid" [fullWidth]="true">

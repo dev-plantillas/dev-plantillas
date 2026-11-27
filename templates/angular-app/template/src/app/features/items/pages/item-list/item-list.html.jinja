@@ -8,22 +8,29 @@
   @if (store.loading()) {
     <p class="item-list__status">{{ 'common.loading' | translate }}</p>
   } @else if (store.error(); as error) {
-    <div class="item-list__status item-list__status--error" role="alert">
-      <p>{{ error }}</p>
-      <ui-button variant="secondary" size="sm" (pressed)="store.load()">
-        {{ 'common.retry' | translate }}
-      </ui-button>
+    <div class="vrb-alert vrb-alert--danger" role="alert">
+      <div class="vrb-alert__body">
+        <p class="vrb-alert__description">{{ error }}</p>
+      </div>
+      <div class="vrb-alert__actions">
+        <ui-button variant="secondary" size="sm" (pressed)="store.load()">
+          {{ 'common.retry' | translate }}
+        </ui-button>
+      </div>
     </div>
   } @else if (store.isEmpty()) {
-    <p class="item-list__status">{{ 'items.list.empty' | translate }}</p>
+    <div class="vrb-empty vrb-empty--bordered">
+      <p class="vrb-empty__title">{{ 'items.list.empty' | translate }}</p>
+    </div>
   } @else {
-    <ul class="item-list__rows">
+    <ul class="vrb-card item-list__rows">
       @for (item of store.items(); track item.id) {
         <li class="item-list__row">
           <a class="item-list__link" [routerLink]="[item.id]">{{ item.name }}</a>
           <span
-            class="item-list__badge"
-            [class.item-list__badge--archived]="item.status === 'archived'"
+            class="vrb-badge vrb-badge--sm"
+            [class.vrb-badge--success]="item.status === 'active'"
+            [class.vrb-badge--neutral]="item.status === 'archived'"
           >
             {{ 'items.status.' + item.status | translate }}
           </span>
@@ -43,20 +50,27 @@
   @if (store.loading()) {
     <p class="item-list__status">Cargando…</p>
   } @else if (store.error(); as error) {
-    <div class="item-list__status item-list__status--error" role="alert">
-      <p>{{ error }}</p>
-      <ui-button variant="secondary" size="sm" (pressed)="store.load()">Reintentar</ui-button>
+    <div class="vrb-alert vrb-alert--danger" role="alert">
+      <div class="vrb-alert__body">
+        <p class="vrb-alert__description">{{ error }}</p>
+      </div>
+      <div class="vrb-alert__actions">
+        <ui-button variant="secondary" size="sm" (pressed)="store.load()">Reintentar</ui-button>
+      </div>
     </div>
   } @else if (store.isEmpty()) {
-    <p class="item-list__status">No hay ítems todavía.</p>
+    <div class="vrb-empty vrb-empty--bordered">
+      <p class="vrb-empty__title">No hay ítems todavía.</p>
+    </div>
   } @else {
-    <ul class="item-list__rows">
+    <ul class="vrb-card item-list__rows">
       @for (item of store.items(); track item.id) {
         <li class="item-list__row">
           <a class="item-list__link" [routerLink]="[item.id]">{{ item.name }}</a>
           <span
-            class="item-list__badge"
-            [class.item-list__badge--archived]="item.status === 'archived'"
+            class="vrb-badge vrb-badge--sm"
+            [class.vrb-badge--success]="item.status === 'active'"
+            [class.vrb-badge--neutral]="item.status === 'archived'"
           >
             {{ statusLabel[item.status] }}
           </span>

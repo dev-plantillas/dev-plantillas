@@ -79,6 +79,15 @@ module_path:
     Module path inválido (esperado host/ruta, ej. gitlab.com/mi-org/protos).
     {% endif %}
 
+http_gateway:
+  type: bool
+  help: >-
+    Rutas REST para el api-gateway: anotaciones google.api.http en el ejemplo,
+    dependencia buf.build/googleapis/googleapis y generación Go de grpc-gateway
+    (*.pb.gw.go) + OpenAPI (gen/openapi). Solo con Go.
+  default: "{{ 'go' in languages }}"
+  when: "{{ 'go' in languages }}"
+
 python_package:
   type: str
   help: "Nombre del paquete Python (import y distribución; ej. mi_org_protos)"
@@ -142,6 +151,12 @@ l_go:
   default: "{{ 'go' in languages }}"
   when: false
 
+# http_gateway efectivo (solo tiene sentido con Go: el gateway es Go).
+l_gw:
+  type: bool
+  default: "{{ http_gateway and 'go' in languages }}"
+  when: false
+
 l_py:
   type: bool
   default: "{{ 'python' in languages }}"
@@ -186,3 +201,36 @@ repo_url:
     {%- elif ci_provider == 'github' -%}https://github.com/{{ org_name }}/{{ repo_name }}
     {%- else -%}https://gitlab.com/{{ org_name }}/{{ repo_name }}{%- endif -%}
   when: false
+
+# >>> base común: preguntas comunes (templates/_base/copier-preguntas.yml; las copia scripts/sincronizar-base.py, no editar acá)
+dueño:
+  type: str
+  help: >-
+    Dueño del repo para CODEOWNERS: @usuario o @grupo/equipo de GitLab/GitHub
+    (revisa por defecto todos los MR/PR; se refina por carpeta en CODEOWNERS)
+  default: "@{{ org_name }}/backend"
+  validator: >-
+    {% if not (dueño | regex_search('^@[A-Za-z0-9][A-Za-z0-9._-]*(/[A-Za-z0-9][A-Za-z0-9._-]*)*$')) %}
+    Formato @usuario o @org/equipo (ej. @mi-org/backend).
+    {% endif %}
+
+docs_repo:
+  type: str
+  help: >-
+    URL del repo de documentación (plantilla docs), sin barra final, ej.
+    https://gitlab.com/mi-org/docs. La plantilla de MR/PR enlaza el issue ahí.
+    Vacío si no hay
+  default: ""
+  validator: >-
+    {% if docs_repo and not (docs_repo | regex_search('^https://[A-Za-z0-9.-]+(:[0-9]+)?(/[A-Za-z0-9._~-]+)+$')) %}
+    URL https del repo, sin barra final (ej. https://gitlab.com/mi-org/docs), o vacío.
+    {% endif %}
+
+tracker_mcp:
+  type: bool
+  help: >-
+    ¿El equipo usa un tracker con MCP (Tekitla u otro que cumpla el protocolo de
+    docs/03 §6)? Suma el servidor `tracker` a .mcp.json; la URL y el token salen
+    de TRACKER_MCP_URL y TRACKER_TOKEN en el entorno de cada persona
+  default: false
+# <<< base común

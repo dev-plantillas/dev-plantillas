@@ -1,10 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'ghost';
-export type ButtonSize = 'sm' | 'md';
+export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
+export type ButtonSize = 'sm' | 'md' | 'lg';
 
 /**
- * Botón base del design system. Componente de `ui/`: sin lógica de negocio,
+ * Botón con las clases `vrb-button` del design system vrb (con estado de carga).
+ * Componente de `ui/`: sin lógica de negocio,
  * sin inyectar stores ni clientes; todo entra por inputs y sale por outputs.
  *
  *   <ui-button variant="secondary" (pressed)="retry()">Reintentar</ui-button>
@@ -26,15 +27,13 @@ export class Button {
   readonly pressed = output<MouseEvent>();
 
   protected readonly isDisabled = computed(() => this.disabled() || this.loading());
-
-  /** Clases BEM: bloque + modificadores. */
+  /** Clases de vrb (`md` es el tamaño por defecto, sin modificador). */
   protected readonly classes = computed(() =>
     [
-      'ui-button',
-      `ui-button--${this.variant()}`,
-      `ui-button--${this.size()}`,
+      'vrb-button',
+      `vrb-button--${this.variant()}`,
+      this.size() === 'md' ? '' : `vrb-button--${this.size()}`,
       this.fullWidth() ? 'ui-button--full' : '',
-      this.loading() ? 'ui-button--loading' : '',
     ]
       .filter(Boolean)
       .join(' '),

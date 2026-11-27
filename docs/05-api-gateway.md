@@ -1,6 +1,8 @@
 # API gateway: diseño y seguridad
 
-Especificación de la plantilla `api-gateway` (pendiente de construir). El
+Especificación de la plantilla `api-gateway` (fase 1 construida en
+`templates/api-gateway/`: REST + auth + autorización por ruta + rate limit en
+memoria + límites, CORS, cabeceras, errores y logs; ver su README). El
 gateway es **la única puerta pública** de la plataforma: traduce los protocolos
 de los clientes a gRPC y concentra los controles de seguridad comunes. Los
 servicios nunca se exponen directamente.
@@ -132,6 +134,7 @@ Además del rate limit (OWASP API4):
 ```
 protocols:        [rest, graphql]      # multiselect; soap = adaptador aparte, documentado
 auth:             firebase | oidc | api-key | ninguno
+mcp:              true | false         # /mcp para agentes (docs/15 §6-8); requiere auth
 rate_limit_store: memory | redis
 deploy_target:    cloud-run | coolify | ninguno
 ci_provider:      gitlab | github

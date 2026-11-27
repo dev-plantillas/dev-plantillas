@@ -104,6 +104,11 @@
         "minLength": 1
       },
       "uniqueItems": true
+    },
+    "tracker": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9]*-[0-9]+$",
+      "description": "Clave del issue en el tracker (p. ej. RND-42), si existe"
     }
   },
   "allOf": [

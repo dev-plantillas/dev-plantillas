@@ -32,9 +32,14 @@
               {
                 "glob": "**/*",
                 "input": "public"
+              },
+              {
+                "glob": "*.woff2",
+                "input": "node_modules/@vrojas1015/vrb/design-system/fonts",
+                "output": "fonts"
               }
             ],
-            "styles": ["src/styles.scss"]
+            "styles": ["node_modules/@vrojas1015/vrb/dist/vrb.css", "src/styles.scss"]
           },
           "configurations": {
             "production": {
